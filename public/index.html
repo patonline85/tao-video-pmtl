@@ -888,74 +888,85 @@
                 document.getElementById('recording-download-mp4-link')?.classList.add('hidden');
             }
         }
+		function setFinishedUI(videoURL) {
+            document.querySelectorAll('[id^="new-video-btn"], #recording-new-btn').forEach(btn => btn.disabled = false);
+
+            // --- 1. XỬ LÝ GIAO DIỆN DESKTOP / MODAL ---
+            document.querySelectorAll('[id^="download-section"]').forEach(el => {
+                el.classList.remove('hidden');
+                const link = el.querySelector('[id^="download-link"]');
+                if (link) {
+                    if (link.href) URL.revokeObjectURL(link.href);
+                    link.href = videoURL;
+                    link.download = `video_${Date.now()}.${fileExtension}`;
+                    link.textContent = `Tải Video (.${fileExtension})`;
+                }
+
+                const convertBtn = el.querySelector('[id^="convert-btn"]');
+                if (convertBtn) {
+                    if (fileExtension === 'webm') {
+                        // === NẾU LÀ WEBM: HIỆN CONVERT, ẨN DOWNLOAD GỐC ===
+                        convertBtn.style.display = 'flex';
+                        resetConvertButtons();
+                        if(link) link.style.display = 'none'; // <--- Ẩn nút tải WebM
+                    } else {
+                        // === NẾU LÀ MP4 GỐC: ẨN CONVERT, HIỆN DOWNLOAD GỐC ===
+                        convertBtn.style.display = 'none';
+                        if(link) link.style.display = 'inline-block';
+                    }
+                }
+                
+                // Ẩn nút tải MP4 (kết quả sau convert) khi mới ghi xong
+                const mp4Link = el.querySelector('[id^="download-mp4-link"]');
+                if(mp4Link) mp4Link.style.display = 'none';
+
+                const statusDiv = el.querySelector('[id^="convert-status"]');
+                if (statusDiv) statusDiv.textContent = '';
+            });
+            
+            document.querySelectorAll('[id^="start-btn"], [id^="stop-btn"]').forEach(btn => btn.classList.add('hidden'));
+
+            // --- 2. XỬ LÝ GIAO DIỆN MOBILE ---
+            if (window.innerWidth < 768) {
+                document.getElementById('recording-status').textContent = 'Hoàn tất!';
+                document.getElementById('recording-stop-btn').classList.add('hidden');
+                document.getElementById('recording-new-btn').classList.remove('hidden');
+
+                const downloadLink = document.getElementById('recording-download-link');
+                const mobileConvertBtn = document.getElementById('recording-convert-btn');
+                const mobileMp4Link = document.getElementById('recording-download-mp4-link');
+
+                if (isIOS) {
+                    downloadLink.classList.add('hidden'); 
+                    if (mobileConvertBtn) mobileConvertBtn.classList.add('hidden');
+                    if (mobileMp4Link) mobileMp4Link.classList.add('hidden');
+                } else {
+                    if (downloadLink.href) URL.revokeObjectURL(downloadLink.href);
+                    downloadLink.href = videoURL;
+                    downloadLink.download = `video_${Date.now()}.${fileExtension}`;
+                    downloadLink.textContent = `Tải về (.${fileExtension})`;
+                    
+                    if (mobileConvertBtn) {
+                         if (fileExtension === 'webm') {
+                            // === MOBILE: LÀ WEBM -> HIỆN CONVERT, ẨN NÚT TẢI ===
+                            mobileConvertBtn.classList.remove('hidden');
+                            downloadLink.classList.add('hidden'); // <--- Ẩn nút tải WebM Mobile
+                            resetConvertButtons(); 
+                        } else {
+                            // === MOBILE: LÀ MP4 -> ẨN CONVERT, HIỆN NÚT TẢI ===
+                            mobileConvertBtn.classList.add('hidden');
+                            downloadLink.classList.remove('hidden');
+                        }
+                    }
+                    if(mobileMp4Link) mobileMp4Link.classList.add('hidden');
+                }
+            }
+
+            if (isIOS && fileExtension === 'mp4') {
+                showIOSDownloadGuide(videoURL);
+            }
+        }
         
-        function setFinishedUI(videoURL) {
-            document.querySelectorAll('[id^="new-video-btn"], #recording-new-btn').forEach(btn => btn.disabled = false);
-
-            document.querySelectorAll('[id^="download-section"]').forEach(el => {
-                el.classList.remove('hidden');
-                const link = el.querySelector('[id^="download-link"]');
-                if (link) {
-                    if (link.href) URL.revokeObjectURL(link.href);
-                    link.href = videoURL;
-                    link.download = `video_${Date.now()}.${fileExtension}`;
-                    link.textContent = `Tải Video (.${fileExtension})`;
-                }
-                const convertBtn = el.querySelector('[id^="convert-btn"]');
-                if (convertBtn) {
-                    if (fileExtension === 'webm') {
-                        convertBtn.style.display = 'flex';
-                        resetConvertButtons(); // Reset to initial state
-                    } else {
-                        convertBtn.style.display = 'none';
-                    }
-                }
-                // Ẩn nút tải MP4 khi mới ghi xong
-                const mp4Link = el.querySelector('[id^="download-mp4-link"]');
-                if(mp4Link) mp4Link.style.display = 'none';
-
-                 // Xóa thông báo cũ
-                const statusDiv = el.querySelector('[id^="convert-status"]');
-                if (statusDiv) statusDiv.textContent = '';
-            });
-            document.querySelectorAll('[id^="start-btn"], [id^="stop-btn"]').forEach(btn => btn.classList.add('hidden'));
-
-            if (window.innerWidth < 768) {
-                document.getElementById('recording-status').textContent = 'Hoàn tất!';
-                document.getElementById('recording-stop-btn').classList.add('hidden');
-                document.getElementById('recording-new-btn').classList.remove('hidden');
-
-                const downloadLink = document.getElementById('recording-download-link');
-                const mobileConvertBtn = document.getElementById('recording-convert-btn');
-                const mobileMp4Link = document.getElementById('recording-download-mp4-link');
-
-                if (isIOS) {
-                    downloadLink.classList.add('hidden'); 
-                    if (mobileConvertBtn) mobileConvertBtn.classList.add('hidden');
-                    if (mobileMp4Link) mobileMp4Link.classList.add('hidden');
-                } else {
-                    if (downloadLink.href) URL.revokeObjectURL(downloadLink.href);
-                    downloadLink.href = videoURL;
-                    downloadLink.download = `video_${Date.now()}.${fileExtension}`;
-                    downloadLink.textContent = `Tải về (.${fileExtension})`;
-                    downloadLink.classList.remove('hidden');
-                    
-                    if (mobileConvertBtn) {
-                         if (fileExtension === 'webm') {
-                            mobileConvertBtn.classList.remove('hidden');
-                            resetConvertButtons(); // Reset to initial state
-                        } else {
-                            mobileConvertBtn.classList.add('hidden');
-                        }
-                    }
-                    if(mobileMp4Link) mobileMp4Link.classList.add('hidden');
-                }
-            }
-
-            if (isIOS && fileExtension === 'mp4') {
-                showIOSDownloadGuide(videoURL);
-            }
-        }
 		function parseSRT(data) {
 		    // 1. Chuẩn hóa xuống dòng (Windows/Mac/Linux đều hiểu)
 		    data = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
