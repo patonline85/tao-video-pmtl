@@ -56,25 +56,34 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         .output(outputPath)
         .videoCodec('libx264')
         .audioCodec('aac')
-        .audioBitrate('128k') 
+        .audioBitrate('192k') // Tăng chất lượng âm thanh lên 192k
         .outputOptions([
-            // 1. Cố định 30 FPS để mượt mà
+            // 1. Cố định 30 FPS
             '-r 30',
 
-            // 2. Resize về HD 720p (nhẹ cho server Armbian)
+            // 2. Resize chuẩn HD 720p
             '-vf scale=-2:720',
 
-            // 3. Preset veryfast: Nhanh hơn ultrafast một chút nhưng ổn định hơn
-            '-preset veryfast',
+            // 3. Preset: Chuyển từ 'veryfast' sang 'fast'
+            // 'fast' nén kỹ hơn, hình ảnh đẹp hơn, file nhẹ hơn, nhưng convert lâu hơn khoảng 20%
+            '-preset fast',
 
-            // 4. CRF 28: Giảm chất lượng một chút để render cực nhanh (tránh timeout)
-            '-crf 28',
+            // 4. CHÌA KHÓA CHẤT LƯỢNG:
+            // -crf 23: Mức tiêu chuẩn cân bằng (trước đó là 28 nên bị mờ)
+            // Càng giảm số này càng nét (VD: 18 là cực nét), nhưng file sẽ nặng. 23 là chuẩn.
+            '-crf 23',
 
-            // 5. Tối ưu playback
+            // 5. Ép Bitrate (Chuẩn YouTube 720p)
+            // Đảm bảo video luôn có đủ dung lượng dữ liệu để hiển thị chi tiết
+            '-b:v 2500k',     // Bitrate trung bình 2.5 Mbps
+            '-maxrate 4000k', // Cho phép vọt lên 4 Mbps ở cảnh chuyển động nhanh
+            '-bufsize 8000k', // Bộ đệm xử lý
+
+            // 6. Tương thích thiết bị
             '-movflags +faststart',
             '-pix_fmt yuv420p',
-            '-profile:v main',
-            '-level 3.1'
+            '-profile:v high', // Dùng profile High để giữ chi tiết tốt hơn Main
+            '-level 4.0'
         ])
         .on('end', () => {
             console.log(`[SUCCESS] Hoàn tất job: ${outputFilename}`);
