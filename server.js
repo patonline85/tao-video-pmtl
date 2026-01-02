@@ -56,17 +56,17 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         .output(outputPath)
         .videoCodec('libx264')
         .audioCodec('aac')
-        .audioBitrate('128k') // Tăng chất lượng âm thanh lên 192k
+        .audioBitrate('128k') 
         .outputOptions([
-            '-r 30',                 // FPS 30 (Đủ dùng, nhẹ hơn 60)
-            '-vf scale=-2:480',      // Resize về 480p: Bí quyết để render siêu nhanh trên máy yếu
-            '-preset ultrafast',     // Preset nhanh nhất của FFmpeg
-            '-tune zerolatency',     // Giảm độ trễ khi bắt đầu
-            '-crf 28',               // Giảm chất lượng xuống mức trung bình để nhẹ CPU
-            '-profile:v baseline',   // Profile cơ bản nhất, tương thích mọi máy
+            '-r 30',                 
+            '-vf scale=-2:720',      
+            '-preset ultrafast',     
+            '-tune zerolatency',     
+            '-crf 23',               
+            '-profile:v baseline',   
             '-movflags +faststart',
             '-pix_fmt yuv420p',
-            '-threads 0'             // Tận dụng hết số nhân CPU của TV Box
+            '-threads 0'             
         ])
         .on('end', () => {
             console.log(`[SUCCESS] Hoàn tất job: ${outputFilename}`);
