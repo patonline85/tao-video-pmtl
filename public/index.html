@@ -683,32 +683,29 @@
         }
 
 		function setAspectRatio(ratio) {
-		    currentAspectRatio = ratio;
-		    
-		    // --- SỬA Ở ĐÂY: Ép cứng độ phân giải cao ---
-		    // 1280 là HD (720p) - Khuyên dùng cho Mobile web để không bị lag/crash
-		    // 1920 là Full HD (1080p) - Nét căng nhưng có thể gây nặng máy/tràn RAM trên đt yếu
-		    const baseWidth = 1280; 
-		    
-		    let width, height;
-		    switch (ratio) {
-		        case '9:16': width = baseWidth * 9 / 16; height = baseWidth; break; // Dọc
-		        case '1:1': width = height = baseWidth; break; // Vuông
-		        case '4:3': width = baseWidth; height = baseWidth * 3 / 4; break;
-		        default: width = baseWidth; height = baseWidth * 9 / 16; break; // Ngang 16:9
-		    }
-		    
-		    canvas.width = Math.round(width);
-		    canvas.height = Math.round(height);
-		
-		    // --- QUAN TRỌNG: Thêm dòng này để canvas không bị tràn màn hình điện thoại ---
-		    // Canvas vẫn vẽ nét (1280px) nhưng hiển thị vừa màn hình
-		    canvas.style.width = '100%';
-		    canvas.style.height = 'auto';
-		    
-		    document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
-		    drawStaticFrame();
-		}
+            currentAspectRatio = ratio;
+            
+            // --- CỐ ĐỊNH ĐỘ PHÂN GIẢI 1280px ĐỂ VIDEO NÉT ---
+            const baseWidth = 1280; 
+            
+            let width, height;
+            switch (ratio) {
+                case '9:16': width = baseWidth * 9 / 16; height = baseWidth; break; // Dọc
+                case '1:1': width = height = baseWidth; break; // Vuông
+                case '4:3': width = baseWidth; height = baseWidth * 3 / 4; break;
+                default: width = baseWidth; height = baseWidth * 9 / 16; break; // Ngang 16:9
+            }
+            
+            canvas.width = Math.round(width);
+            canvas.height = Math.round(height);
+            
+            // CSS để hiển thị vừa vặn trên màn hình điện thoại
+            canvas.style.width = '100%';
+            canvas.style.height = 'auto';
+
+            document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
+            drawStaticFrame();
+        }
 
         // --- DRAWING & EFFECTS ---
         function drawStaticFrame() { if (animationFrameId) cancelAnimationFrame(animationFrameId); renderAll(0); }
