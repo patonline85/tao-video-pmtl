@@ -1219,10 +1219,11 @@
         function renderLoop() { const elapsedTime = Date.now() - recordingStartTime; updateEffects(); renderAll(elapsedTime); animationFrameId = requestAnimationFrame(renderLoop); }
         
 		function startRecording() {
-            if (imageFiles.length === 0 || !audioFile1) {
-                alert('Vui lòng chọn ít nhất một ảnh và âm thanh chính!');
+            if (imageFiles.length === 0) {
+                alert('Vui lòng chọn ít nhất một ảnh!');
                 return;
             }
+            
             if (mediaRecorder) return;
             if (!supportedMimeType) {
                 alert('Rất tiếc, trình duyệt của bạn không hỗ trợ ghi video.');
@@ -1234,32 +1235,45 @@
             initializeEffects();
             recordingStartTime = Date.now();
 
-			startTimerUI();
+            startTimerUI();
 
-            let localAudioContext, destination, localAudioPlayer1, localAudioPlayer2;
+            let localAudioContext, destination, localAudioPlayer1 = null, localAudioPlayer2 = null;
 
             try {
-				const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-				localAudioContext = new AudioContextClass();
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                localAudioContext = new AudioContextClass();
+                
+                // Tạo đích đến cho âm thanh (Nếu không có nhạc, nó sẽ tạo ra âm thanh im lặng)
                 destination = localAudioContext.createMediaStreamDestination();
                 
-                localAudioPlayer1 = new Audio();
-                localAudioPlayer1.crossOrigin = "anonymous";
-                localAudioPlayer1.src = URL.createObjectURL(audioFile1);
-                // ** SỬA LỖI: Tắt lặp lại để video tự dừng **
-                // localAudioPlayer1.loop = true; // Đã xóa/vô hiệu hóa dòng này
+                // --- XỬ LÝ ÂM THANH 1 (Nếu có) ---
+                if (audioFile1) {
+                    localAudioPlayer1 = new Audio();
+                    localAudioPlayer1.crossOrigin = "anonymous";
+                    localAudioPlayer1.src = URL.createObjectURL(audioFile1);
+                    
+                    const source1 = localAudioContext.createMediaElementSource(localAudioPlayer1);
+                    const gainNode1 = localAudioContext.createGain();
+                    gainNode1.gain.value = audioState.volume1;
+                    source1.connect(gainNode1).connect(destination);
+                    gainNode1.connect(localAudioContext.destination); // Phát ra loa để nghe
 
-                const source1 = localAudioContext.createMediaElementSource(localAudioPlayer1);
-                const gainNode1 = localAudioContext.createGain();
-                gainNode1.gain.value = audioState.volume1;
-                source1.connect(gainNode1).connect(destination);
-                gainNode1.connect(localAudioContext.destination);
+                    // Tự động dừng khi hết nhạc chính
+                    localAudioPlayer1.addEventListener('ended', () => {
+                        if (mediaRecorder && mediaRecorder.state === 'recording') {
+                            console.log('Âm thanh chính đã kết thúc, tự động dừng ghi hình.');
+                            stopRecording();
+                        }
+                    });
+                }
 
+                // --- XỬ LÝ ÂM THANH 2 (Nếu có) ---
                 if (audioFile2) {
                     localAudioPlayer2 = new Audio();
                     localAudioPlayer2.crossOrigin = "anonymous";
                     localAudioPlayer2.src = URL.createObjectURL(audioFile2);
-                    localAudioPlayer2.loop = true; // Nhạc nền vẫn lặp lại
+                    localAudioPlayer2.loop = true; // Nhạc nền lặp lại
+                    
                     const source2 = localAudioContext.createMediaElementSource(localAudioPlayer2);
                     const gainNode2 = localAudioContext.createGain();
                     gainNode2.gain.value = audioState.volume2;
@@ -1267,25 +1281,31 @@
                     gainNode2.connect(localAudioContext.destination);
                 }
                 
+                // Kết hợp luồng Video từ Canvas và Audio (có thể im lặng)
                 const videoStream = canvas.captureStream(60);
                 const audioStream = destination.stream;
+                
+                // Nếu không có audio nào, audioStream vẫn tồn tại nhưng là silence (im lặng) -> Rất tốt để giữ định dạng file chuẩn
                 const localCombinedStream = new MediaStream([
                     ...videoStream.getVideoTracks(), 
                     ...audioStream.getAudioTracks()
                 ]);
 
-                // Thêm options videoBitsPerSecond để đảm bảo đầu vào chất lượng
-				mediaRecorder = new MediaRecorder(localCombinedStream, { 
-				    mimeType: supportedMimeType,
-				    videoBitsPerSecond: 8000000 // 8 Mbps (Rất nét)
-				});
+                // Thiết lập MediaRecorder
+                mediaRecorder = new MediaRecorder(localCombinedStream, { 
+                    mimeType: supportedMimeType,
+                    videoBitsPerSecond: 8000000 // 8 Mbps
+                });
                 
                 mediaRecorder.ondataavailable = (e) => e.data.size > 0 && recordedChunks.push(e.data);
 
                 mediaRecorder.onstop = () => {
                     if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+                    
+                    // Dừng nhạc nếu có
                     localAudioPlayer1?.pause();
                     localAudioPlayer2?.pause();
+                    
                     localCombinedStream?.getTracks().forEach(track => track.stop());
                     if (localAudioContext && localAudioContext.state !== 'closed') { localAudioContext.close(); }
                     
@@ -1297,18 +1317,14 @@
                     mediaRecorder = null;
                 };
 
-                // ** SỬA LỖI: Thêm lại sự kiện để tự động dừng ghi hình **
-                localAudioPlayer1.addEventListener('ended', () => {
-                    if (mediaRecorder && mediaRecorder.state === 'recording') {
-                        console.log('Âm thanh chính đã kết thúc, tự động dừng ghi hình.');
-                        stopRecording();
-                    }
-                });
-
+                // Kích hoạt AudioContext và bắt đầu ghi
                 localAudioContext.resume().then(() => {
-                    localAudioPlayer1.play().catch(e => console.error("Lỗi phát âm thanh 1:", e));
-                    localAudioPlayer2?.play().catch(e => console.error("Lỗi phát âm thanh 2:", e));
+                    // Chỉ play nhạc nếu file tồn tại
+                    const playPromises = [];
+                    if (localAudioPlayer1) playPromises.push(localAudioPlayer1.play().catch(e => console.error("Lỗi audio 1:", e)));
+                    if (localAudioPlayer2) playPromises.push(localAudioPlayer2.play().catch(e => console.error("Lỗi audio 2:", e)));
 
+                    // Chờ một chút cho ổn định rồi mới start recorder
                     setTimeout(() => {
                         if (mediaRecorder && mediaRecorder.state === 'inactive') {
                            mediaRecorder.start();
@@ -1318,13 +1334,17 @@
 
                 }).catch(e => {
                     console.error("Không thể khởi động AudioContext:", e);
-                    alert("Đã xảy ra lỗi khi khởi động âm thanh. Vui lòng thử lại.");
-                    resetToEditMode();
+                    alert("Lỗi hệ thống âm thanh (AudioContext). Vẫn sẽ cố gắng ghi hình không tiếng.");
+                    // Fallback: Cố gắng ghi hình dù lỗi audio
+                     if (mediaRecorder && mediaRecorder.state === 'inactive') {
+                           mediaRecorder.start();
+                           renderLoop();
+                     }
                 });
 
             } catch (error) {
                 console.error("Lỗi nghiêm trọng trong quá trình ghi:", error);
-                alert("Đã xảy ra lỗi không mong muốn. Vui lòng làm mới trang và thử lại.");
+                alert("Đã xảy ra lỗi. Vui lòng thử lại.");
                 resetToEditMode();
             }
         }
