@@ -699,9 +699,14 @@
             canvas.width = Math.round(width);
             canvas.height = Math.round(height);
             
-            // CSS để hiển thị vừa vặn trên màn hình điện thoại
-            canvas.style.width = '100%';
-            canvas.style.height = 'auto';
+			// SỬA LẠI NHƯ SAU:
+			// Xóa bỏ width 100% để canvas tự co giãn theo đúng tỷ lệ pixel
+			canvas.style.width = ''; 
+			canvas.style.height = '';
+			
+			// Dùng max-width/height để không bị tràn màn hình nhưng vẫn giữ tỷ lệ
+			canvas.style.maxWidth = '100%';
+			canvas.style.maxHeight = '100%';
 
             document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
             drawStaticFrame();
