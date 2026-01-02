@@ -58,32 +58,37 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         .audioCodec('aac')
         .audioBitrate('128k') // Tăng chất lượng âm thanh lên 192k
         .outputOptions([
-            // 1. Tăng FPS lên 60 để chuyển động mượt mà hơn (nếu nguồn cho phép)
+            // 1. Giữ nguyên hoặc giảm FPS (nếu không cần quá mượt thì 24 hoặc 30 là đủ nhẹ)
             '-r 30',
-
-            // 2. Nâng lên Full HD 1080p (Thay vì 720p)
-            // Nếu ảnh đầu vào nét, video sẽ cực nét.
+        
+            // 2. Độ phân giải: Nếu muốn nhanh nhất thì nên bỏ dòng này để giữ nguyên gốc.
+            // Tuy nhiên, nếu bắt buộc phải resize về 720p thì giữ lại.
             '-vf scale=-2:720',
-
-            // 3. Preset: Chuyển sang 'slow'
-            // 'slow' giúp FFmpeg nén kỹ hơn, giữ chi tiết tốt hơn 'fast' ở cùng dung lượng.
-            '-preset slow',
-
-            // 4. CHÌA KHÓA QUAN TRỌNG NHẤT: CRF
-            // Giảm từ 23 xuống 18.
-            // 18 là mức "Visually Lossless" (Mắt thường thấy như file gốc).
-            // Số càng nhỏ càng nét (và dung lượng càng cao).
-            '-crf 18',
-
-            // 5. BỎ CÁC DÒNG ÉP BITRATE (-b:v, -maxrate, -bufsize)
-            // Lý do: Khi dùng CRF, hãy để FFmpeg tự quyết định bitrate cần thiết cho từng cảnh.
-            // Cảnh tĩnh nó sẽ dùng ít bit, cảnh nhiều hạt/hiệu ứng nó sẽ tự tăng bitrate lên cao để không bị vỡ.
+        
+            // 3. QUAN TRỌNG NHẤT: Preset
+            // Chuyển từ 'slow' sang 'ultrafast' (Siêu nhanh).
+            // FFmpeg sẽ bỏ qua các thuật toán nén phức tạp để xuất file ngay lập tức.
+            // Nhược điểm: File sẽ nặng hơn khoảng 2-3 lần so với 'slow'.
+            '-preset ultrafast',
+        
+            // 4. Tối ưu độ trễ (Giúp bắt đầu render nhanh hơn)
+            '-tune zerolatency',
+        
+            // 5. CRF (Chất lượng): Tăng lên để giảm gánh nặng cho CPU
+            // Tăng từ 18 lên 28.
+            // 28 là mức chất lượng trung bình khá, không quá nét nhưng render rất nhẹ.
+            '-crf 28',
+        
+            // 6. Profile: Chuyển về 'baseline'
+            // Profile này đơn giản nhất, ít tốn tài nguyên giải mã/mã hóa nhất.
+            '-profile:v baseline',
             
-            // 6. Tương thích và màu sắc
+            // 7. Các thông số tương thích web (Giữ nguyên)
             '-movflags +faststart',
             '-pix_fmt yuv420p',
-            '-profile:v high',
-            '-level 4.2' // Nâng level lên 4.2 để hỗ trợ 1080p 60fps tốt nhất
+            
+            // 8. Ép sử dụng đa luồng tối đa (Tận dụng hết các nhân CPU của Armbian)
+            '-threads 0' 
         ])
         .on('end', () => {
             console.log(`[SUCCESS] Hoàn tất job: ${outputFilename}`);
