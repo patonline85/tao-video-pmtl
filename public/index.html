@@ -1332,7 +1332,7 @@
 
 		async function convertToMp4() {
 			if (!webmBlob) {
-				alert('Không tìm thấy video để chuyển đổi. Vui lòng tạo video trước.');
+				alert('Không tìm thấy video để chuyển đổi.');
 				return;
 			}
 
@@ -1345,72 +1345,100 @@
 				btn.querySelector('.btn-text').classList.add('hidden');
 				btn.querySelector('.btn-loader').classList.remove('hidden');
 			});
-			statusDivs.forEach(div => {
-				div.textContent = 'Đang tải lên server & xử lý...';
-				div.classList.remove('text-red-500');
-				div.classList.add('text-gray-600');
-			});
+			
+			// Hàm cập nhật text trạng thái
+			const updateStatus = (msg, isError = false) => {
+				statusDivs.forEach(div => {
+					div.textContent = msg;
+					div.className = isError ? 'text-xs text-center text-red-500 mt-2' : 'text-xs text-center text-gray-600 mt-2';
+				});
+			};
+
+			updateStatus('Đang tải lên server...');
 
 			try {
-				// Chuẩn bị form data
+				// 1. Gửi file lên Server
 				const formData = new FormData();
 				formData.append('video', webmBlob);
 
-				// Gửi về Local Server (/api/convert)
-				const response = await fetch('/api/convert', {
+				const uploadResponse = await fetch('/api/convert', {
 					method: 'POST',
 					body: formData
 				});
 
-				if (!response.ok) {
-					throw new Error(`Server lỗi: ${response.statusText}`);
-				}
+				if (!uploadResponse.ok) throw new Error(`Lỗi tải lên: ${uploadResponse.statusText}`);
+				
+				const uploadResult = await uploadResponse.json();
+				
+				if (!uploadResult.success) throw new Error(uploadResult.error || 'Lỗi không xác định');
 
-				const data = await response.json();
+				// 2. Bắt đầu vòng lặp hỏi thăm (Polling)
+				const jobId = uploadResult.jobId;
+				updateStatus('Đang xử lý trên server (0s)...');
+				
+				let seconds = 0;
+				const pollInterval = setInterval(async () => {
+					seconds += 2;
+					updateStatus(`Đang xử lý trên server (${seconds}s)...`);
 
-				if (data.success && data.url) {
-					// Server trả về đường dẫn tương đối (VD: /videos/xyz.mp4)
-					const mp4Url = window.location.origin + data.url;
+					try {
+						// Gọi API kiểm tra trạng thái
+						const statusRes = await fetch(`/api/status/${jobId}`);
+						const statusData = await statusRes.json();
 
-					// Hiển thị nút tải MP4
-					document.querySelectorAll('[id^="download-mp4-link"], #recording-download-mp4-link').forEach(link => {
-						link.href = mp4Url;
-						link.classList.remove('hidden');
-						link.style.display = 'inline-flex';
-						
-						// Cấu hình download
-						link.setAttribute('download', 'video-final.mp4'); 
-					});
-
-					statusDivs.forEach(div => div.textContent = 'Chuyển đổi thành công!');
-					
-					// Ẩn nút chuyển đổi đi để người dùng tập trung vào nút tải về
-					convertButtons.forEach(btn => btn.style.display = 'none');
-					
-					// Nếu là iOS, kích hoạt hướng dẫn khi bấm tải
-					if (isIOS) {
-						 document.querySelectorAll('[id^="download-mp4-link"], #recording-download-mp4-link').forEach(link => {
-							// Xóa sự kiện cũ (nếu có) bằng cách clone node (mẹo nhanh) hoặc gán onclick
-							link.onclick = (e) => {
-								e.preventDefault(); // Ngăn tải mặc định
-								showIOSDownloadGuide(mp4Url); // Hiện modal hướng dẫn
-							};
-						 });
+						if (statusData.status === 'done') {
+							// === XONG ===
+							clearInterval(pollInterval); // Dừng hỏi thăm
+							
+							const mp4Url = window.location.origin + statusData.url;
+							finishConversionUI(mp4Url);
+							updateStatus('Chuyển đổi thành công!');
+						} else if (statusData.status === 'error') {
+							// === LỖI ===
+							clearInterval(pollInterval);
+							throw new Error('Server báo lỗi trong quá trình xử lý.');
+						} else if (statusData.status === 'not_found') {
+                            // === KHÔNG TÌM THẤY (Có thể server restart mất job) ===
+                            clearInterval(pollInterval);
+                            throw new Error('Mất kết nối với job xử lý.');
+                        }
+						// Nếu status === 'processing' thì vòng lặp tiếp tục chạy...
+					} catch (pollErr) {
+						clearInterval(pollInterval);
+						console.error(pollErr);
+						updateStatus('Lỗi kết nối khi kiểm tra trạng thái.', true);
+						resetConvertButtons();
 					}
-
-				} else {
-					throw new Error('Phản hồi không hợp lệ từ server.');
-				}
+				}, 2000); // Hỏi thăm mỗi 2 giây
 
 			} catch (error) {
-				console.error('Lỗi chuyển đổi:', error);
-				statusDivs.forEach(div => {
-					div.textContent = 'Lỗi: ' + error.message;
-					div.classList.add('text-red-500');
-				});
+				console.error('Lỗi khởi tạo:', error);
+				updateStatus('Lỗi: ' + error.message, true);
 				resetConvertButtons();
 			}
 		}
+
+        // Hàm phụ trợ để hiển thị nút tải khi xong
+        function finishConversionUI(mp4Url) {
+            // Hiển thị nút tải MP4
+            document.querySelectorAll('[id^="download-mp4-link"], #recording-download-mp4-link').forEach(link => {
+                link.href = mp4Url;
+                link.classList.remove('hidden');
+                link.style.display = 'inline-flex';
+                link.setAttribute('download', 'video-final.mp4'); 
+                
+                // Fix iOS click
+                if (isIOS) {
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        showIOSDownloadGuide(mp4Url);
+                    };
+                }
+            });
+
+            // Ẩn nút convert
+            document.querySelectorAll('[id^="convert-btn"], #recording-convert-btn').forEach(btn => btn.style.display = 'none');
+        }
 
         function resetConvertButtons() {
             const convertButtons = document.querySelectorAll('[id^="convert-btn"], #recording-convert-btn');
