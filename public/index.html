@@ -772,54 +772,39 @@
             }
         }
 		function drawImageWithPanZoom(img) {
-            // --- 1. XỬ LÝ NGUỒN (SOURCE) ---
-            // Mặc định lấy toàn bộ ảnh gốc
-            let sWidth = img.width;
-            let sHeight = img.height;
-            let sx = 0;
-            let sy = 0;
-
-            // Xử lý hiệu ứng Zoom (Ken Burns) - Cắt cúp ngay trên ảnh gốc
+            const canvasAspect = canvas.width / canvas.height; 
+            const imageAspect = img.width / img.height;
+            
+            let sx=0, sy=0, sWidth=img.width, sHeight=img.height;
+            
+            // Xử lý hiệu ứng Zoom (nếu có)
             if (activeEffects.has('blur-zoom')) {
-                // Zoom vào thì vùng lấy ảnh (Source) sẽ nhỏ lại
-                // zoomPanState.level chạy từ 1.0 -> 1.x
-                // Vùng cắt thực tế = Kích thước ảnh / độ zoom
-                const cropWidth = img.width / zoomPanState.level;
-                const cropHeight = img.height / zoomPanState.level;
-                
-                // Tính toán tọa độ cắt để tạo hiệu ứng di chuyển (Pan)
-                sx = (img.width - cropWidth) * zoomPanState.x;
-                sy = (img.height - cropHeight) * zoomPanState.y;
-                
-                // Cập nhật lại kích thước vùng nguồn
-                sWidth = cropWidth;
-                sHeight = cropHeight;
+                const zoom = 1 - (zoomPanState.level - 1) * 0.5;
+                sWidth = img.width * zoom; 
+                sHeight = img.height * zoom;
+                sx = (img.width - sWidth) * zoomPanState.x; 
+                sy = (img.height - sHeight) * zoomPanState.y;
             }
-
-            // --- 2. TÍNH TOÁN VẼ (DESTINATION) - QUAN TRỌNG NHẤT ---
             
-            // Tính tỷ lệ giữa Khung hình (Canvas) và Vùng ảnh (Source)
-            const scaleX = canvas.width / sWidth;
-            const scaleY = canvas.height / sHeight;
-
-            // QUY TẮC VÀNG CHỐNG MÉO:
-            // Chỉ dùng 1 tỷ lệ scale duy nhất cho cả 2 chiều.
-            // - Dùng Math.max: Để ảnh LẤP ĐẦY khung (Cover) - Cắt bớt phần thừa.
-            // - Dùng Math.min: Để ảnh HIỆN TOÀN BỘ (Contain) - Có viền đen.
+            let dWidth, dHeight, dx, dy;
             
-            // Ở đây mình dùng Math.max để video đẹp (full màn hình 9:16)
-            const scale = Math.max(scaleX, scaleY);
-
-            // Kích thước vẽ thực tế (Sẽ luôn lớn hơn hoặc bằng Canvas)
-            const dWidth = sWidth * scale;
-            const dHeight = sHeight * scale;
-
-            // --- 3. CĂN GIỮA ---
-            // Tọa độ vẽ để ảnh luôn nằm chính giữa khung hình
-            const dx = (canvas.width - dWidth) / 2;
-            const dy = (canvas.height - dHeight) / 2;
-
-            // --- 4. VẼ ---
+            // LOGIC CỦA BẠN: Tự động tính toán để ảnh nằm lọt thỏm giữa khung hình
+            // Trường hợp 1: Ảnh "bè" hơn khung hình (Ví dụ ảnh 16:9 bỏ vào khung 1:1) -> Lấy chiều rộng làm chuẩn
+            if (imageAspect > canvasAspect) { 
+                dWidth = canvas.width; 
+                dHeight = dWidth / imageAspect; // Tính chiều cao theo tỷ lệ gốc
+                dx = 0; 
+                dy = (canvas.height - dHeight) / 2; // Căn giữa dọc
+            } 
+            // Trường hợp 2: Ảnh "cao" hơn khung hình (Ví dụ ảnh 9:16 bỏ vào khung 16:9) -> Lấy chiều cao làm chuẩn
+            else { 
+                dHeight = canvas.height; 
+                dWidth = dHeight * imageAspect; // Tính chiều rộng theo tỷ lệ gốc
+                dy = 0; 
+                dx = (canvas.width - dWidth) / 2; // Căn giữa ngang
+            }
+            
+            // Vẽ ảnh
             ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
         }
         function drawLogo() {
