@@ -772,35 +772,56 @@
             }
         }
 		function drawImageWithPanZoom(img) {
-            // 1. Tính toán vùng ảnh gốc cần lấy (xử lý logic Zoom nếu có)
+            // 1. Tính toán tỷ lệ khung hình và tỷ lệ ảnh
+            const canvasRatio = canvas.width / canvas.height;
+            const imgRatio = img.width / img.height;
+            
+            // 2. Tính toán kích thước vẽ (Destination)
+            let dWidth, dHeight;
+            let dx, dy;
+
+            // Logic: Object-fit: CONTAIN (Giữ nguyên tỷ lệ, hiển thị toàn bộ ảnh)
+            if (imgRatio > canvasRatio) {
+                // Ảnh ngang dài hơn khung -> Lấy chiều rộng khung làm chuẩn
+                dWidth = canvas.width;
+                dHeight = canvas.width / imgRatio;
+                dx = 0;
+                dy = (canvas.height - dHeight) / 2; // Căn giữa dọc
+            } else {
+                // Ảnh dọc cao hơn khung -> Lấy chiều cao khung làm chuẩn
+                dHeight = canvas.height;
+                dWidth = canvas.height * imgRatio;
+                dy = 0;
+                dx = (canvas.width - dWidth) / 2; // Căn giữa ngang
+            }
+
+            // 3. Xử lý hiệu ứng Zoom (Nếu có)
+            // Lưu ý: Zoom vào nhưng vẫn giữ đúng tỷ lệ, không được làm méo
             let sWidth = img.width;
             let sHeight = img.height;
             let sx = 0;
             let sy = 0;
 
             if (activeEffects.has('blur-zoom')) {
-                const zoom = 1 - (zoomPanState.level - 1) * 0.5;
-                sWidth = img.width * zoom;
-                sHeight = img.height * zoom;
-                // Tính toán vị trí cắt để tạo hiệu ứng pan (di chuyển)
-                sx = (img.width - sWidth) * zoomPanState.x;
-                sy = (img.height - sHeight) * zoomPanState.y;
+                // Hiệu ứng Ken Burns: Zoom nhẹ vào bên trong ảnh gốc
+                // Thay vì co giãn destination, ta cắt (crop) source
+                const zoomLevel = 1 / zoomPanState.level; // Đảo ngược vì zoomPanState.level > 1
+                
+                const cropWidth = img.width * zoomLevel;
+                const cropHeight = img.height * zoomLevel;
+                
+                sWidth = cropWidth;
+                sHeight = cropHeight;
+                
+                // Tính toán vị trí Pan (Di chuyển)
+                sx = (img.width - cropWidth) * zoomPanState.x;
+                sy = (img.height - cropHeight) * zoomPanState.y;
             }
 
-            // 2. LOGIC MỚI: TÍNH TOÁN VẼ LÊN CANVAS (MODE COVER)
-            // Mục tiêu: Lấp đầy màn hình mà KHÔNG làm méo ảnh
-            
-            const renderScale = Math.max(canvas.width / sWidth, canvas.height / sHeight);
-            
-            // Kích thước vẽ thực tế (sẽ lớn hơn hoặc bằng canvas)
-            const dWidth = sWidth * renderScale;
-            const dHeight = sHeight * renderScale;
-            
-            // Tọa độ vẽ (để căn giữa ảnh)
-            const dx = (canvas.width - dWidth) / 2;
-            const dy = (canvas.height - dHeight) / 2;
-
-            // 3. Thực hiện vẽ
+            // 4. Vẽ ảnh
+            // Giải thích tham số:
+            // (img, sx, sy, sWidth, sHeight) -> Lấy phần nào của ảnh gốc
+            // (dx, dy, dWidth, dHeight)     -> Vẽ vào đâu trên canvas
             ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
         }
         function drawLogo() {
