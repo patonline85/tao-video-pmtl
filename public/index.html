@@ -937,11 +937,21 @@
                 const mobileConvertBtn = document.getElementById('recording-convert-btn');
                 const mobileMp4Link = document.getElementById('recording-download-mp4-link');
 
-                if (isIOS) {
-                    downloadLink.classList.add('hidden'); 
-                    if (mobileConvertBtn) mobileConvertBtn.classList.add('hidden');
-                    if (mobileMp4Link) mobileMp4Link.classList.add('hidden');
-                } else {
+				if (isIOS) {
+				    // Trên iOS, ẩn nút tải trực tiếp (vì thường lỗi với Blob)
+				    downloadLink.classList.add('hidden');
+				    
+				    // --- SỬA: Luôn hiển thị nút Chuyển đổi trên iOS ---
+				    if (mobileConvertBtn) {
+				        mobileConvertBtn.classList.remove('hidden'); // Hiện nút
+				        mobileConvertBtn.style.display = 'flex';     // Đảm bảo hiển thị đúng style
+				        resetConvertButtons();                       // Reset trạng thái nút
+				    }
+				    
+				    // Ẩn nút tải file kết quả (sẽ hiện sau khi convert xong)
+				    if (mobileMp4Link) mobileMp4Link.classList.add('hidden');
+				} else {
+
                     if (downloadLink.href) URL.revokeObjectURL(downloadLink.href);
                     downloadLink.href = videoURL;
                     downloadLink.download = `video_${Date.now()}.${fileExtension}`;
