@@ -46,13 +46,28 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
 
     ffmpeg(inputPath)
         .output(outputPath)
-        // Cấu hình chuẩn cho iOS/Web (H.264 + AAC)
         .videoCodec('libx264') 
         .audioCodec('aac')
+        .audioBitrate('128k') // Đảm bảo âm thanh rõ ràng
         .outputOptions([
-            '-preset ultrafast', // Tốc độ nhanh (có thể dùng 'veryfast' để chất lượng tốt hơn xíu)
-            '-movflags +faststart', // Giúp video phát ngay lập tức trên web/iOS
-            '-pix_fmt yuv420p' // Tương thích màu sắc tốt nhất cho mọi trình phát
+            // 1. Cố định 30 khung hình/giây (Quan trọng để hết giật)
+            '-r 30', 
+
+            // 2. Resize về chuẩn HD 720p
+            // scale=-2:720 nghĩa là: Chiều cao 720px, chiều rộng tự tính theo tỷ lệ (và chia hết cho 2)
+            '-vf scale=-2:720', 
+
+            // 3. Preset: dùng 'veryfast' thay vì 'ultrafast' để nén tốt hơn, file nhẹ hơn, ít lỗi playback
+            '-preset veryfast', 
+
+            // 4. CRF 23: Chất lượng hình ảnh chuẩn (càng thấp càng nét, 23 là mức cân bằng)
+            '-crf 23', 
+
+            // 5. Tối ưu hóa cho web/mobile
+            '-movflags +faststart', 
+            '-pix_fmt yuv420p',
+            '-profile:v main',
+            '-level 3.1'
         ])
         .on('end', () => {
             console.log(`[SUCCESS] Đã tạo file: ${outputFilename}`);
