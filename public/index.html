@@ -699,15 +699,30 @@
             
             canvas.width = Math.round(width);
             canvas.height = Math.round(height);
+                      
+            canvas.width = Math.round(width);
+            canvas.height = Math.round(height);
             
-			// SỬA LẠI NHƯ SAU:
-			// Xóa bỏ width 100% để canvas tự co giãn theo đúng tỷ lệ pixel
-			canvas.style.width = ''; 
-			canvas.style.height = '';
-			
-			// Dùng max-width/height để không bị tràn màn hình nhưng vẫn giữ tỷ lệ
-			canvas.style.maxWidth = '100%';
-			canvas.style.maxHeight = '100%';
+            // --- CẬP NHẬT: Xử lý hiển thị (CSS) ---
+            canvas.style.width = ''; 
+            canvas.style.height = '';
+            
+            canvas.style.maxWidth = '100%';
+
+            // Kiểm tra xem có phải đang dùng điện thoại không
+            const isMobile = window.innerWidth < 768;
+
+            if (isMobile && ratio === '9:16') {
+                // Nếu là Mobile + Tỷ lệ dọc 9:16 -> Giới hạn chiều cao hiển thị là 60% màn hình thôi
+                // Bạn có thể chỉnh số 60vh thành 50vh (nhỏ hơn) hoặc 70vh (lớn hơn) tùy ý
+                canvas.style.maxHeight = '60vh'; 
+            } else {
+                // Các trường hợp khác (Desktop hoặc tỷ lệ ngang) thì cứ để full
+                canvas.style.maxHeight = '100%';
+            }
+
+            document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
+            drawStaticFrame();
 
             document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
             drawStaticFrame();
