@@ -2,7 +2,7 @@
 <html lang="vi"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình tạo Video từ Ảnh và Nhạc (Tối ưu hóa)</title>
+    <title>Trình tạo Video từ Ảnh</title>
 	<link rel="icon" href="logo.png" type="image/png">
 	<!-- Google tag (gtag.js) -->
 	<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-DQWQTWXMZL"></script>
@@ -10,7 +10,6 @@
 	  window.dataLayer = window.dataLayer || [];
 	  function gtag(){dataLayer.push(arguments);}
 	  gtag('js', new Date());
-
 	  gtag('config', 'G-DQWQTWXMZL');
 	</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
@@ -136,17 +135,6 @@
             opacity: 1;
         }</style></head>
 <body class="bg-rose-50 text-gray-800 flex flex-col md:flex-row h-dynamic-screen overflow-hidden">
-    <!-- PWA Install Prompt -->
-    <div id="install-prompt">
-        <div class="prompt-text">
-            Cài đặt ứng dụng để sử dụng thuận tiện hơn!
-        </div>
-        <button id="install-button">Cài đặt</button>
-        <button id="close-install-prompt">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-    </div>
-
     <main class="flex-grow flex items-center justify-center p-4 bg-gray-800/50 md:w-2/3">
         <canvas id="canvas" class="bg-black rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
     </main>
@@ -1564,54 +1552,5 @@
         }
 
     </script>
-	<script>
-			// === PWA Installation Logic ===
-			window.addEventListener('load', () => {
-				const installPromptEl = document.getElementById('install-prompt');
-				const installButton = document.getElementById('install-button');
-				const closeInstallPromptButton = document.getElementById('close-install-prompt');
-				let deferredPrompt;
-
-				if ('serviceWorker' in navigator) {
-					navigator.serviceWorker.register('sw.js')
-					.then((reg) => console.log('Service worker registered.', reg))
-					.catch((err) => console.error('Service worker registration failed:', err));
-				}
-
-				window.addEventListener('beforeinstallprompt', (e) => {
-					e.preventDefault();
-					deferredPrompt = e;
-					if (installPromptEl) {
-						installPromptEl.style.display = 'flex';
-					}
-				});
-
-				if (installButton) {
-					installButton.addEventListener('click', async () => {
-						if (deferredPrompt) {
-							if (installPromptEl) installPromptEl.style.display = 'none';
-							deferredPrompt.prompt();
-							await deferredPrompt.userChoice;
-							deferredPrompt = null;
-						}
-					});
-				}
-
-				if (closeInstallPromptButton) {
-					closeInstallPromptButton.addEventListener('click', () => {
-						 if (installPromptEl) {
-							installPromptEl.style.display = 'none';
-						 }
-					});
-				}
-				
-				setTimeout(() => {
-					const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-					if (!isStandalone && deferredPrompt) {
-						if (installPromptEl) installPromptEl.style.display = 'flex';
-					}
-				}, 3000);
-			});
-	</script>
 </body>
 </html>
