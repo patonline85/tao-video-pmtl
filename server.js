@@ -59,6 +59,7 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         .audioBitrate('128k') // Tăng chất lượng âm thanh lên 192k
         .outputOptions([
             '-r 30',                 // FPS 30 (Đủ dùng, nhẹ hơn 60)
+            '-vf scale=-2:480',      // Resize về 480p: Bí quyết để render siêu nhanh trên máy yếu
             '-preset ultrafast',     // Preset nhanh nhất của FFmpeg
             '-tune zerolatency',     // Giảm độ trễ khi bắt đầu
             '-crf 28',               // Giảm chất lượng xuống mức trung bình để nhẹ CPU
