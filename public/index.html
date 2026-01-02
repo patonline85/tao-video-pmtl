@@ -771,17 +771,36 @@
                 drawImageWithPanZoom(imageFiles[0]);
             }
         }
-        function drawImageWithPanZoom(img) {
-            const canvasAspect = canvas.width / canvas.height; const imageAspect = img.width / img.height;
-            let sx=0, sy=0, sWidth=img.width, sHeight=img.height;
+		function drawImageWithPanZoom(img) {
+            // 1. Tính toán vùng ảnh gốc cần lấy (xử lý logic Zoom nếu có)
+            let sWidth = img.width;
+            let sHeight = img.height;
+            let sx = 0;
+            let sy = 0;
+
             if (activeEffects.has('blur-zoom')) {
                 const zoom = 1 - (zoomPanState.level - 1) * 0.5;
-                sWidth = img.width * zoom; sHeight = img.height * zoom;
-                sx = (img.width - sWidth) * zoomPanState.x; sy = (img.height - sHeight) * zoomPanState.y;
+                sWidth = img.width * zoom;
+                sHeight = img.height * zoom;
+                // Tính toán vị trí cắt để tạo hiệu ứng pan (di chuyển)
+                sx = (img.width - sWidth) * zoomPanState.x;
+                sy = (img.height - sHeight) * zoomPanState.y;
             }
-            let dWidth, dHeight, dx, dy;
-            if (imageAspect > canvasAspect) { dWidth = canvas.width; dHeight = dWidth / imageAspect; dx = 0; dy = (canvas.height - dHeight) / 2; } 
-            else { dHeight = canvas.height; dWidth = dHeight * imageAspect; dy = 0; dx = (canvas.width - dWidth) / 2; }
+
+            // 2. LOGIC MỚI: TÍNH TOÁN VẼ LÊN CANVAS (MODE COVER)
+            // Mục tiêu: Lấp đầy màn hình mà KHÔNG làm méo ảnh
+            
+            const renderScale = Math.max(canvas.width / sWidth, canvas.height / sHeight);
+            
+            // Kích thước vẽ thực tế (sẽ lớn hơn hoặc bằng canvas)
+            const dWidth = sWidth * renderScale;
+            const dHeight = sHeight * renderScale;
+            
+            // Tọa độ vẽ (để căn giữa ảnh)
+            const dx = (canvas.width - dWidth) / 2;
+            const dy = (canvas.height - dHeight) / 2;
+
+            // 3. Thực hiện vẽ
             ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
         }
         function drawLogo() {
