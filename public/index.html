@@ -1214,7 +1214,7 @@
                 // Thêm options videoBitsPerSecond để đảm bảo đầu vào chất lượng
 				mediaRecorder = new MediaRecorder(localCombinedStream, { 
 				    mimeType: supportedMimeType,
-				    videoBitsPerSecond: 5000000 // 5 Mbps (Đủ nét cho 720p/1080p)
+				    videoBitsPerSecond: 8000000 // 8 Mbps (Rất nét)
 				});
                 
                 mediaRecorder.ondataavailable = (e) => e.data.size > 0 && recordedChunks.push(e.data);
