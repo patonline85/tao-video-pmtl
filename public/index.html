@@ -66,7 +66,7 @@
 		}
     </style>
     <link href="output.css" rel="stylesheet">
-        #install-prompt {
+ 	<style> #install-prompt {
             /* Layout */
             display: none; /* JS sẽ đổi thành 'flex' để hiển thị */
             align-items: center;
@@ -126,7 +126,9 @@
         }
         #install-prompt #close-install-prompt:hover {
             opacity: 1;
-        }</style></head>
+        }
+	</style>
+</head>
 <body class="bg-rose-50 text-gray-800 flex flex-col md:flex-row h-dynamic-screen overflow-hidden">
     <main class="flex-grow flex items-center justify-center p-4 bg-gray-800/50 md:w-2/3">
         <canvas id="canvas" class="bg-black rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
@@ -144,11 +146,9 @@
         </div>
     </aside>
 
-    <div class="mobile-ui fixed bottom-0 left-0 right-0 z-20 flex flex-col">
-        <div id="modals-container"></div>
-        <nav id="mobile-toolbar" class="w-full bg-white border-t p-1 flex justify-around items-center"></nav>
-        <div id="mobile-recording-bar" class="w-full bg-white border-t p-2 hidden"></div>
-    </div>
+	<main class="flex-grow flex items-center justify-center p-4 bg-gray-800/50 md:w-2/3 pb-24 md:pb-4">
+	    <canvas id="canvas" class="bg-black rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
+	</main>
 
     <script>
         // --- DYNAMIC VIEWPORT HEIGHT FIX ---
