@@ -682,24 +682,33 @@
             document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
         }
 
-        // --- PERFORMANCE OPTIMIZATION ---
-        function setAspectRatio(ratio) {
-            currentAspectRatio = ratio;
-            const screenWidth = window.innerWidth;
-            const baseWidth = Math.min(1280, screenWidth * (screenWidth < 768 ? 1.5 : 1)); 
-            
-            let width, height;
-            switch (ratio) {
-                case '9:16': width = baseWidth * 9 / 16; height = baseWidth; break;
-                case '1:1': width = height = baseWidth; break;
-                case '4:3': width = baseWidth; height = baseWidth * 3 / 4; break;
-                default: width = baseWidth; height = baseWidth * 9 / 16; break;
-            }
-            canvas.width = Math.round(width);
-            canvas.height = Math.round(height);
-            document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
-            drawStaticFrame();
-        }
+		function setAspectRatio(ratio) {
+		    currentAspectRatio = ratio;
+		    
+		    // --- SỬA Ở ĐÂY: Ép cứng độ phân giải cao ---
+		    // 1280 là HD (720p) - Khuyên dùng cho Mobile web để không bị lag/crash
+		    // 1920 là Full HD (1080p) - Nét căng nhưng có thể gây nặng máy/tràn RAM trên đt yếu
+		    const baseWidth = 1280; 
+		    
+		    let width, height;
+		    switch (ratio) {
+		        case '9:16': width = baseWidth * 9 / 16; height = baseWidth; break; // Dọc
+		        case '1:1': width = height = baseWidth; break; // Vuông
+		        case '4:3': width = baseWidth; height = baseWidth * 3 / 4; break;
+		        default: width = baseWidth; height = baseWidth * 9 / 16; break; // Ngang 16:9
+		    }
+		    
+		    canvas.width = Math.round(width);
+		    canvas.height = Math.round(height);
+		
+		    // --- QUAN TRỌNG: Thêm dòng này để canvas không bị tràn màn hình điện thoại ---
+		    // Canvas vẫn vẽ nét (1280px) nhưng hiển thị vừa màn hình
+		    canvas.style.width = '100%';
+		    canvas.style.height = 'auto';
+		    
+		    document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
+		    drawStaticFrame();
+		}
 
         // --- DRAWING & EFFECTS ---
         function drawStaticFrame() { if (animationFrameId) cancelAnimationFrame(animationFrameId); renderAll(0); }
@@ -1187,7 +1196,8 @@
             let localAudioContext, destination, localAudioPlayer1, localAudioPlayer2;
 
             try {
-                localAudioContext = new AudioContext();
+				const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+				localAudioContext = new AudioContextClass();
                 destination = localAudioContext.createMediaStreamDestination();
                 
                 localAudioPlayer1 = new Audio();
@@ -1214,7 +1224,7 @@
                     gainNode2.connect(localAudioContext.destination);
                 }
                 
-                const videoStream = canvas.captureStream(30);
+                const videoStream = canvas.captureStream(60);
                 const audioStream = destination.stream;
                 const localCombinedStream = new MediaStream([
                     ...videoStream.getVideoTracks(), 
@@ -1325,7 +1335,9 @@
 							<li>Chọn <b>"Lưu vào Tệp"</b> (Save to Files).</li>
 							<li>Chọn thư mục và nhấn <b>Lưu</b>.</li>
 						</ol>
-						<a href="${url}" target="_blank" id="open-video-link" class="action-button">Mở Video để Bắt đầu</a>
+						<a href="${url}" target="_blank" rel="noopener noreferrer" id="open-video-link" class="action-button">
+						    Bấm vào đây để mở Video
+						</a>
 					</div>
 				</div>
 			`;
@@ -1369,7 +1381,8 @@
 			try {
 				// 1. Gửi file lên Server
 				const formData = new FormData();
-				formData.append('video', webmBlob);
+				const ext = webmBlob.type.includes('mp4') ? 'mp4' : 'webm';
+				formData.append('video', webmBlob, `recording.${ext}`);
 
 				const uploadResponse = await fetch('/api/convert', {
 					method: 'POST',
