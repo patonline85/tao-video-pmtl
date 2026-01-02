@@ -42,6 +42,11 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         return res.status(400).json({ error: 'Không tìm thấy file video.' });
     }
 
+    if (req.file.size === 0) {
+        fs.unlink(req.file.path, () => {}); 
+        return res.status(400).json({ error: 'File video bị lỗi (0 bytes).' });
+    }
+    
     const inputPath = req.file.path;
     const outputFilename = `video_${Date.now()}.mp4`;
     const outputPath = path.join(VIDEO_DIR, outputFilename);
