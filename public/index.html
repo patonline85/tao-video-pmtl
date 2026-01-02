@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình tạo Video từ Ảnh và Nhạc (Tối ưu hóa)</title>
+	<!-- Google tag (gtag.js) -->
+	<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-DQWQTWXMZL"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+
+	  gtag('config', 'G-DQWQTWXMZL');
+	</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #991b1b; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .theme-bg-primary { background-color: #991b1b; }
+        .theme-text-primary { color: #991b1b; }
+
+        .h-dynamic-screen { height: 100vh; height: calc(var(--vh, 1vh) * 100); }
+
+        .mobile-toolbar::-webkit-scrollbar { display: none; }
+        .toolbar-btn.active { background-color: #fee2e2; color: #991b1b; }
+
+        .modal-backdrop { background-color: rgba(0,0,0,0.5); transition: opacity 0.3s ease; }
+        .modal-content { transform: translateY(100%); transition: transform 0.3s ease; }
+        .modal-backdrop.active .modal-content { transform: translateY(0); }
+
+        @media (min-width: 768px) { .mobile-ui { display: none !important; } }
+
+        .effect-checkbox:checked + label, .logo-pos-radio:checked + label, .ratio-btn.active {
+            background-color: #991b1b; color: white; border-color: #991b1b;
+        }
+        .switch input:checked + .slider { background-color: #991b1b; }
+        .thumbnail-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; }
+        .thumbnail { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 2px solid transparent; }
+		
+		.ios-guide-modal {
+			position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
+			display: flex; align-items: center; justify-content: center; z-index: 999;
+			opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+		}
+		.ios-guide-modal.visible {
+			opacity: 1; pointer-events: auto;
+		}
+		.ios-guide-content {
+			background: white; padding: 20px; border-radius: 12px; text-align: center; 
+			max-width: 90%; width: 350px;
+			transform: scale(0.95); transition: transform 0.3s ease;
+		}
+		.ios-guide-modal.visible .ios-guide-content {
+			transform: scale(1);
+		}
+		.ios-guide-content h3 { font-weight: 700; font-size: 1.125rem; margin-bottom: 10px; color: #333; }
+		.ios-guide-content p { margin-bottom: 15px; color: #555; font-size: 0.9rem; }
+		.ios-guide-content ol { text-align: left; margin-bottom: 20px; list-style-position: inside; padding-left: 10px; font-size: 0.9rem; }
+		.ios-guide-content li { margin-bottom: 8px; }
+		.ios-guide-content .share-icon { display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin: 0 2px; }
+		.ios-guide-content .action-button { 
+			display: block; background-color: #991b1b; color: white; 
+			padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600;
+		}
+    </style>
+    <link href="../output.css" rel="stylesheet">
+
+    <!-- === PWA (Progressive Web App) Support === -->
+    <meta name="theme-color" content="#92400e">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icons/icon-192x192.png">
+    <link rel="icon" href="images/icons/icon-32x32.png" type="image/png">
+    <!-- === End PWA Support === --><style>
+        #install-prompt {
+            /* Layout */
+            display: none; /* JS sẽ đổi thành 'flex' để hiển thị */
+            align-items: center;
+            gap: 1rem;
+            
+            /* Position */
+            position: fixed;
+            bottom: 80px;
+            left: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            max-width: 28rem; /* 448px */
+            margin-left: auto;
+            margin-right: auto;
+
+            /* Appearance */
+            background-color: #166534; /* Tương ứng bg-green-800 */
+            color: #ffffff;
+            padding: 0.75rem; /* 12px */
+            border-radius: 0.5rem; /* 8px */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        @media (min-width: 640px) {
+            #install-prompt {
+                left: 50%;
+                transform: translateX(-50%);
+                width: auto;
+            }
+        }
+        #install-prompt .prompt-text {
+            flex-grow: 1;
+            font-size: 0.875rem; /* 14px */
+        }
+        #install-prompt #install-button {
+            background-color: #ffffff;
+            color: #166534; /* Màu chữ xanh đậm */
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* 6px */
+            border: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+        #install-prompt #install-button:hover {
+            background-color: #f0fdf4; /* Màu nền xanh lá rất nhạt khi hover */
+        }
+        #install-prompt #close-install-prompt {
+            background: none;
+            border: none;
+            color: #ffffff;
+            opacity: 0.7;
+            cursor: pointer;
+            flex-shrink: 0;
+            padding: 0.25rem;
+            transition: opacity 0.2s;
+        }
+        #install-prompt #close-install-prompt:hover {
+            opacity: 1;
+        }</style></head>
+<body class="bg-rose-50 text-gray-800 flex flex-col md:flex-row h-dynamic-screen overflow-hidden">
+    <!-- PWA Install Prompt -->
+    <div id="install-prompt">
+        <div class="prompt-text">
+            Cài đặt ứng dụng để sử dụng thuận tiện hơn!
+        </div>
+        <button id="install-button">Cài đặt</button>
+        <button id="close-install-prompt">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    </div>
+
+    <main class="flex-grow flex items-center justify-center p-4 bg-gray-800/50 md:w-2/3">
+        <canvas id="canvas" class="bg-black rounded-lg shadow-2xl max-w-full max-h-full"></canvas>
+    </main>
+
+    <aside id="sidebar" class="hidden md:w-1/3 md:flex md:flex-col bg-white shadow-2xl">
+        <div id="action-area-desktop" class="p-4 border-b bg-white flex-shrink-0"></div>
+        <div class="flex-grow p-4 overflow-y-auto">
+            <div id="desktop-panels">
+                <div id="ratio-panel-desktop" class="mb-6"></div>
+                <div id="effects-panel-desktop" class="mb-6"></div>
+				<div class="mb-4"><h3 class="font-bold text-gray-700 mb-2">Phụ đề</h3><div id="subtitle-panel-desktop"></div></div>
+                <div id="logo-panel-desktop"></div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="mobile-ui fixed bottom-0 left-0 right-0 z-20 flex flex-col">
+        <div id="modals-container"></div>
+        <nav id="mobile-toolbar" class="w-full bg-white border-t p-1 flex justify-around items-center"></nav>
+        <div id="mobile-recording-bar" class="w-full bg-white border-t p-2 hidden"></div>
+    </div>
+
+    <script>
+        // --- DYNAMIC VIEWPORT HEIGHT FIX ---
+        const setVh = () => { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); };
+        window.addEventListener('resize', setVh);
+        setVh();
+
+        // --- STATE & CONFIG ---
+        const BACKEND_URL = 'https://v-creator.onrender.com'; // <-- URL của máy chủ cấp chữ ký
+
+        let imageFiles = [], audioFile1 = null, audioFile2 = null, logoFile = null, mediaRecorder;
+        let animationFrameId, recordingStartTime = 0;
+        let currentAspectRatio = '16:9', activeEffects = new Set();
+        let particles = { sparkles: [], clouds: [], lotus: [], leaves: [], rain: [], lightRays: [] };
+        let slideshowState = { currentIndex: 0, transitionProgress: 0, imageDuration: 4000, transitionDuration: 1000 };
+        let zoomPanState = { level: 1.0, dir: 1, x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
+        let logoState = { enabled: false, size: 0.15, position: 'bottom-right' };
+        let audioState = { volume1: 1.0, volume2: 0.5 };
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        let webmBlob = null; 
+
+        const MimeTypes = [
+            'video/webm; codecs=vp9,opus',
+            'video/webm',
+            'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
+            'video/mp4',
+        ];
+
+		// Thêm vào dưới các biến state hiện có
+		let subtitleState = {
+		    enabled: true,
+		    data: [], 
+		    fontFamily: 'Inter',
+		    fontSize: 30,
+		    
+		    // --- Vị trí ---
+		    position: 'bottom', // 'top', 'center', 'bottom'
+		    
+		    // --- Màu sắc & Hiệu ứng chữ ---
+		    color: '#ffffff',
+		    strokeColor: '#000000', // Màu viền
+		    strokeWidth: 0,         // Độ dày viền (0 là tắt)
+		    shadowColor: '#000000', // Màu bóng
+		    shadowBlur: 0,          // Độ nhòe bóng (0 là tắt)
+		    
+		    // --- Nền ---
+		    hasBackground: true,
+		    backgroundColor: '#000000',
+		    backgroundOpacity: 0.5 // Độ trong suốt (0.0 -> 1.0)
+		};
+		
+        function getSupportedMimeType() {
+            for (const mimeType of MimeTypes) {
+                if (MediaRecorder.isTypeSupported(mimeType)) {
+                    console.log(`Using supported MIME type: ${mimeType}`);
+                    return mimeType;
+                }
+            }
+            return null;
+        }
+        const supportedMimeType = getSupportedMimeType();
+        const fileExtension = supportedMimeType && supportedMimeType.includes('webm') ? 'webm' : 'mp4';
+
+        const TOOLS = [
+            { id: 'images', label: 'Ảnh', icon: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>` },
+            { id: 'music', label: 'Nhạc', icon: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 6l12-3" /></svg>` },
+            { id: 'ratio', label: 'Tỷ Lệ', icon: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 0h-4m4 0l-5-5" /></svg>` },
+            { id: 'effects', label: 'Hiệu Ứng', icon: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16v4m-2-2h4m5 10v4m-2-2h4M17 3l-4.5 4.5M12 12l-4.5 4.5" /></svg>` },
+            { id: 'logo', label: 'Logo', icon: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.5 4l-3.5 3.5-3.5-3.5M12 18V2" /></svg>` },
+        	{ id: 'subtitles', label: 'Phụ đề', icon: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>` },
+    		{ id: 'actions', label: 'Bắt Đầu', icon: `<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>` }
+		];
+
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+
+		function loadDefaultLogo() {
+		    const defaultLogo = new Image();
+		    defaultLogo.crossOrigin = "anonymous"; // Quan trọng để canvas không bị lỗi bảo mật
+		    defaultLogo.src = 'images/default-logo.png'; // Đường dẫn tới logo trong thư mục public
+		
+		    // Chỉ thực hiện khi logo đã được tải xong
+		    defaultLogo.onload = () => {
+		        console.log('Logo mặc định đã được tải thành công.');
+		        logoFile = defaultLogo; // Gán logo đã tải vào biến toàn cục
+		
+		        // Cập nhật giao diện người dùng để báo hiệu logo đã sẵn sàng
+		        document.querySelectorAll('[id^="logo-name"]').forEach(el => el.textContent = 'Logo mặc định');
+		        document.querySelectorAll('[id^="logo-controls"]').forEach(el => el.classList.remove('hidden'));
+		
+		        // Tùy chọn: Bạn có thể để logo bật sẵn bằng cách bỏ comment các dòng dưới
+		        // document.querySelectorAll('[id^="logo-toggle"]').forEach(el => el.checked = true);
+		        // logoState.enabled = true;
+		        // drawStaticFrame(); // Vẽ lại canvas để hiển thị logo ngay lập tức
+		    };
+		
+		    defaultLogo.onerror = () => {
+		        console.error('Không thể tải logo mặc định. Vui lòng kiểm tra đường dẫn file.');
+		    };
+		}
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            populateUI();
+            addGlobalListeners();
+            setAspectRatio('16:9');
+            setIdleUI(); 
+			loadDefaultLogo();
+        };
+
+        function populateUI() {
+            document.getElementById('action-area-desktop').innerHTML = generateActionAreaHTML('desktop');
+            document.getElementById('ratio-panel-desktop').innerHTML = generateRatioPanelHTML('desktop');
+            document.getElementById('effects-panel-desktop').innerHTML = generateEffectsPanelHTML('desktop');
+			document.getElementById('subtitle-panel-desktop').innerHTML = generateSubtitlePanelHTML('desktop');
+            document.getElementById('logo-panel-desktop').innerHTML = generateLogoPanelHTML('desktop');
+            
+            const toolbar = document.getElementById('mobile-toolbar');
+            const modalsContainer = document.getElementById('modals-container');
+            
+            toolbar.innerHTML = TOOLS.map(tool => `
+                <button data-modal-id="modal-${tool.id}" class="toolbar-btn flex-1 flex flex-col items-center p-2 rounded-lg space-y-1">
+                    ${tool.icon}
+                    <span class="text-xs">${tool.label}</span>
+                </button>
+            `).join('');
+
+            modalsContainer.innerHTML = `
+                ${generateModal('images', 'Chèn Ảnh', generateImagePanelHTML('mobile'))}
+                ${generateModal('music', 'Chèn Nhạc', generateMusicPanelHTML('mobile'))}
+                ${generateModal('ratio', 'Tỷ Lệ', generateRatioPanelHTML('mobile'))}
+                ${generateModal('effects', 'Hiệu Ứng', generateEffectsPanelHTML('mobile'))}
+                ${generateModal('logo', 'Chèn Logo', generateLogoPanelHTML('mobile'))}
+                ${generateModal('actions', 'Xuất Video', generateStartStopHTML('mobile'))}
+				${generateModal('subtitles', 'Phụ đề & Lời bài hát', generateSubtitlePanelHTML('mobile'))}
+            `;
+            
+            document.getElementById('mobile-recording-bar').innerHTML = generateRecordingBarHTML();
+        }
+
+        // --- HTML GENERATION FUNCTIONS ---
+        function generateModal(id, title, content) {
+            return `
+                <div id="modal-${id}" class="modal-backdrop fixed inset-0 z-30 flex items-end justify-center opacity-0 pointer-events-none">
+                    <div class="absolute inset-0" data-close-modal></div>
+                    <div class="modal-content bg-white w-full max-w-lg rounded-t-2xl p-4 relative max-h-[75vh] overflow-y-auto">
+                        <h3 class="font-bold text-lg mb-4 theme-text-primary">${title}</h3>
+                        ${content}
+                        <button data-close-modal class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        function generateImagePanelHTML(device) {
+            return `
+                <label for="image-upload-${device}" class="w-full border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:bg-gray-50 transition block mb-4">
+                    <span class="font-semibold theme-text-primary">Chọn một hoặc nhiều ảnh</span>
+                    <span id="image-count-${device}" class="block text-xs text-gray-500 truncate mt-1">Chưa chọn ảnh nào</span>
+                </label>
+                <input id="image-upload-${device}" type="file" class="hidden" accept="image/*" multiple>
+                <div id="thumbnail-container-${device}" class="thumbnail-container"></div>
+            `;
+        }
+        function generateMusicPanelHTML(device) {
+             return `
+                <div class="grid grid-cols-1 gap-4">
+                    ${generateAudioInputHTML('1', 'Âm thanh chính', device)}
+                    ${generateAudioInputHTML('2', 'Nhạc nền', device)}
+                </div>
+            `;
+        }
+        function generateRatioPanelHTML(device) {
+            return `
+                <div id="ratio-controls-${device}" class="grid grid-cols-2 gap-2">
+                    <button data-ratio="16:9" class="ratio-btn px-3 py-2 border rounded-lg font-semibold transition text-sm active">16:9 (Ngang)</button>
+                    <button data-ratio="9:16" class="ratio-btn px-3 py-2 border rounded-lg font-semibold transition text-sm">9:16 (Dọc)</button>
+                    <button data-ratio="1:1" class="ratio-btn px-3 py-2 border rounded-lg font-semibold transition text-sm">1:1 (Vuông)</button>
+                    <button data-ratio="4:3" class="ratio-btn px-3 py-2 border rounded-lg font-semibold transition text-sm">4:3 (Cổ điển)</button>
+                </div>
+            `;
+        }
+        function generateEffectsPanelHTML(device) {
+            return `
+                <div id="effects-container-${device}" class="grid grid-cols-2 gap-2">
+                     <input type="checkbox" id="effect-slideshow-${device}" value="slideshow" class="hidden effect-checkbox"><label for="effect-slideshow-${device}" class="text-sm text-center font-medium border rounded-lg p-3 cursor-pointer transition">Chuyển ảnh (Fade)</label>
+                     <input type="checkbox" id="effect-blur-zoom-${device}" value="blur-zoom" class="hidden effect-checkbox"><label for="effect-blur-zoom-${device}" class="text-sm text-center font-medium border rounded-lg p-3 cursor-pointer transition">Nền Mờ & Zoom</label>
+                     <input type="checkbox" id="effect-light-rays-${device}" value="lightRays" class="hidden effect-checkbox"><label for="effect-light-rays-${device}" class="text-sm text-center font-medium border rounded-lg p-3 cursor-pointer transition">Tia Sáng</label>
+                     <input type="checkbox" id="effect-sparkles-${device}" value="sparkles" class="hidden effect-checkbox"><label for="effect-sparkles-${device}" class="text-sm text-center font-medium border rounded-lg p-3 cursor-pointer transition">Lấp Lánh</label>
+                     <input type="checkbox" id="effect-lotus-${device}" value="lotus" class="hidden effect-checkbox"><label for="effect-lotus-${device}" class="text-sm text-center font-medium border rounded-lg p-3 cursor-pointer transition">Hoa Sen Rơi</label>
+                     <input type="checkbox" id="effect-aura-${device}" value="aura" class="hidden effect-checkbox"><label for="effect-aura-${device}" class="text-sm text-center font-medium border rounded-lg p-3 cursor-pointer transition">Hào Quang</label>
+                </div>
+            `;
+        }
+        function generateLogoPanelHTML(device) {
+            return `
+                <label for="logo-upload-${device}" class="w-full border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:bg-gray-50 transition block mb-4">
+                    <span class="font-semibold theme-text-primary">Tải lên Logo (.png)</span>
+                    <span id="logo-name-${device}" class="block text-xs text-gray-500 truncate mt-1">Chưa chọn</span>
+                </label>
+                <input id="logo-upload-${device}" type="file" class="hidden" accept="image/png">
+                <div id="logo-controls-${device}" class="hidden">
+                     <div class="flex items-center justify-between mb-4">
+                        <span class="font-semibold text-gray-700">Hiển thị Logo</span>
+                        <label class="switch">
+                            <input type="checkbox" id="logo-toggle-${device}">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <label for="logo-size-${device}" class="block text-sm font-medium text-gray-700">Kích thước</label>
+                    <input id="logo-size-${device}" type="range" min="5" max="50" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Vị trí</label>
+                    <div id="logo-position-${device}" class="grid grid-cols-2 gap-2">
+                        <input type="radio" name="logo-pos-${device}" id="pos-tl-${device}" value="top-left" class="hidden logo-pos-radio"><label for="pos-tl-${device}" class="text-xs text-center font-medium border rounded-lg p-2 cursor-pointer transition">Trên-Trái</label>
+                        <input type="radio" name="logo-pos-${device}" id="pos-tr-${device}" value="top-right" class="hidden logo-pos-radio"><label for="pos-tr-${device}" class="text-xs text-center font-medium border rounded-lg p-2 cursor-pointer transition">Trên-Phải</label>
+                        <input type="radio" name="logo-pos-${device}" id="pos-bl-${device}" value="bottom-left" class="hidden logo-pos-radio"><label for="pos-bl-${device}" class="text-xs text-center font-medium border rounded-lg p-2 cursor-pointer transition">Dưới-Trái</label>
+                        <input type="radio" name="logo-pos-${device}" id="pos-br-${device}" value="bottom-right" class="hidden logo-pos-radio" checked><label for="pos-br-${device}" class="text-xs text-center font-medium border rounded-lg p-2 cursor-pointer transition">Dưới-Phải</label>
+                    </div>
+                </div>
+            `;
+        }
+        function generateAudioInputHTML(id, label, device, isCompact = false) {
+            const padding = isCompact ? 'p-2' : 'p-3';
+            const textSize = isCompact ? 'text-xs' : 'text-sm';
+            return `
+                <div class="flex-1 border-2 border-dashed rounded-lg ${padding} text-center flex flex-col justify-between">
+                    <label for="audio-upload-${id}-${device}" class="cursor-pointer">
+                        <span class="font-semibold theme-text-primary ${textSize}">${label}</span>
+                        <span id="audio-name-${id}-${device}" class="block text-xs text-gray-500 truncate mt-1 max-w-[80px] mx-auto">Chưa chọn</span>
+                    </label>
+                    <input id="audio-upload-${id}-${device}" type="file" class="hidden" accept="audio/*, .mp3, .wav, .m4a, .aac, .ogg, audio/mpeg, audio/wav, audio/aac">
+                    <div class="mt-1">
+                        <input id="audio-volume-${id}-${device}" type="range" min="0" max="1" step="0.05" value="${id === '1' ? audioState.volume1 : audioState.volume2}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+            `;
+        }
+        function generateStartStopHTML(device, isCompact = false) {
+            const buttonPadding = isCompact ? 'py-2 px-3 text-sm' : 'py-3 px-4';
+            return `
+                <div class="flex gap-2">
+                    <button id="start-btn-${device}" class="w-full theme-bg-primary text-white font-bold ${buttonPadding} rounded-lg hover:bg-rose-800 transition disabled:bg-rose-300">Bắt đầu</button>
+                    <button id="stop-btn-${device}" class="w-full bg-gray-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-gray-700 transition disabled:bg-gray-300 hidden" disabled>Dừng</button>
+                    <div id="download-section-${device}" class="w-full hidden">
+                         <a id="download-link-${device}" class="w-full text-center inline-block bg-green-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-green-700">Tải Video (.${fileExtension})</a>
+                         <button id="convert-btn-${device}" class="w-full mt-2 bg-blue-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                            <span class="btn-text">Chuyển sang MP4</span>
+                            <div class="loader btn-loader hidden" style="width: 16px; height: 16px; border-width: 2px;"></div>
+                         </button>
+                         <!-- ** NÂNG CẤP: Thêm nút tải MP4 ** -->
+                         <a id="download-mp4-link-${device}" target="_blank" class="w-full mt-2 text-center hidden items-center justify-center bg-purple-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-purple-700">Tải về MP4</a>
+                         <div id="convert-status-${device}" class="text-xs text-center text-gray-600 mt-2"></div>
+                         <button id="new-video-btn-${device}" class="w-full mt-2 bg-gray-200 text-gray-800 font-bold ${buttonPadding} rounded-lg hover:bg-gray-300 transition">Tạo mới</button>
+                    </div>
+                </div>
+            `;
+        }
+        function generateActionAreaHTML(device) {
+             return `
+                <div class="grid grid-cols-3 gap-2">
+                    <label for="image-upload-${device}-action" class="col-span-1 border-2 border-dashed rounded-lg p-2 text-center cursor-pointer hover:bg-gray-50 transition flex flex-col justify-center items-center">
+                        <span class="font-semibold theme-text-primary text-xs">Ảnh</span>
+                        <span id="image-count-${device}-action" class="block text-xs text-gray-500 truncate mt-1">0 ảnh</span>
+                    </label>
+                    <input id="image-upload-${device}-action" type="file" class="hidden" accept="image/*" multiple>
+                    ${generateAudioInputHTML('1', 'Âm thanh 1', `${device}-action`, true)}
+                    ${generateAudioInputHTML('2', 'Âm thanh 2', `${device}-action`, true)}
+                </div>
+                <div class="mt-2">
+                ${generateStartStopHTML(device, true)}
+                </div>
+            `;
+        }
+        function generateRecordingBarHTML() {
+            return `
+                <div class="flex items-center justify-between w-full">
+                    <div id="recording-status" class="flex items-center text-sm font-medium"></div>
+                    <div class="flex items-center gap-2">
+                        <a id="recording-download-link" class="hidden bg-green-600 text-white font-bold py-2 px-4 rounded-lg">Tải về</a>
+                        <button id="recording-convert-btn" class="hidden bg-blue-600 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                            <span class="btn-text">Chuyển MP4</span>
+                            <div class="loader btn-loader hidden" style="width: 16px; height: 16px; border-width: 2px;"></div>
+                        </button>
+                        <!-- ** NÂNG CẤP: Thêm nút tải MP4 cho mobile ** -->
+                        <a id="recording-download-mp4-link" target="_blank" class="hidden bg-purple-600 text-white font-bold py-2 px-4 rounded-lg">Tải MP4</a>
+                        <button id="recording-new-btn" class="hidden bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg">Làm lại</button>
+                    </div>
+                    <button id="recording-stop-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Dừng</button>
+                </div>
+            `;
+        }
+		function generateSubtitlePanelHTML(device) {
+		    return `
+		        <div class="space-y-4">
+		            <label class="block w-full border-2 border-dashed rounded-lg p-3 text-center cursor-pointer hover:bg-gray-50 transition">
+		                <span class="font-semibold theme-text-primary">Tải lên file .SRT</span>
+		                <span id="subtitle-status-${device}" class="block text-xs text-gray-500 mt-1">Chưa có file</span>
+		                <input id="subtitle-upload-${device}" type="file" class="hidden" accept=".srt">
+		            </label>
+		
+		            <div class="grid grid-cols-2 gap-3">
+		                <div>
+		                    <label class="block text-xs font-medium text-gray-700 mb-1">Vị trí</label>
+		                    <select id="sub-pos-${device}" class="w-full border rounded p-2 text-sm">
+		                        <option value="bottom">Dưới cùng</option>
+		                        <option value="center">Chính giữa</option>
+		                        <option value="top">Trên cùng</option>
+		                    </select>
+		                </div>
+		                <div>
+		                    <label class="block text-xs font-medium text-gray-700 mb-1">Font chữ</label>
+		                    <select id="sub-font-${device}" class="w-full border rounded p-2 text-sm">
+		                        <option value="Inter">Inter (Hiện đại)</option>
+		                        <option value="Arial">Arial (Cơ bản)</option>
+		                        <option value="Times New Roman">Times New Roman</option>
+		                        <option value="Courier New">Courier (Máy đánh chữ)</option>
+		                        <option value="Cursive">Viết tay</option>
+		                    </select>
+		                </div>
+		            </div>
+		
+		            <div class="grid grid-cols-2 gap-3 border-t pt-3">
+		                <div>
+		                    <label class="block text-xs font-medium text-gray-700 mb-1">Màu chữ</label>
+		                    <div class="flex items-center gap-2">
+		                        <input type="color" id="sub-color-${device}" value="#ffffff" class="w-8 h-8 rounded cursor-pointer border">
+		                        <span class="text-xs text-gray-500">Chính</span>
+		                    </div>
+		                </div>
+		                <div>
+		                    <label class="block text-xs font-medium text-gray-700 mb-1">Viền chữ</label>
+		                    <div class="flex items-center gap-2">
+		                        <input type="color" id="sub-stroke-color-${device}" value="#000000" class="w-8 h-8 rounded cursor-pointer border">
+		                        <input type="range" id="sub-stroke-width-${device}" min="0" max="10" value="0" class="flex-1 h-2 bg-gray-200 rounded-lg">
+		                    </div>
+		                </div>
+		            </div>
+		
+		            <div>
+		                <label class="block text-xs font-medium text-gray-700 mb-1">Đổ bóng (Màu & Độ nhòe)</label>
+		                <div class="flex items-center gap-2">
+		                    <input type="color" id="sub-shadow-color-${device}" value="#000000" class="w-8 h-8 rounded cursor-pointer border">
+		                    <input type="range" id="sub-shadow-blur-${device}" min="0" max="20" value="0" class="flex-1 h-2 bg-gray-200 rounded-lg">
+		                </div>
+		            </div>
+		
+		            <div class="border-t pt-3 space-y-3">
+		                <div>
+		                    <div class="flex justify-between mb-1">
+		                        <label class="block text-xs font-medium text-gray-700">Nền phụ đề</label>
+		                        <input type="checkbox" id="sub-bg-toggle-${device}" checked>
+		                    </div>
+		                    <div class="flex items-center gap-2">
+		                        <input type="color" id="sub-bg-color-${device}" value="#000000" class="w-8 h-8 rounded cursor-pointer border">
+		                        <div class="flex-1 flex flex-col">
+		                            <span class="text-[10px] text-gray-500">Độ trong suốt</span>
+		                            <input type="range" id="sub-bg-opacity-${device}" min="0" max="1" step="0.1" value="0.5" class="w-full h-2 bg-gray-200 rounded-lg">
+		                        </div>
+		                    </div>
+		                </div>
+		                <div>
+		                    <label class="block text-xs font-medium text-gray-700 mb-1">Kích thước chữ</label>
+		                    <input id="sub-size-${device}" type="range" min="10" max="100" value="30" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+		                </div>
+		            </div>
+		
+		            <details class="border rounded-lg bg-gray-50 mt-2">
+		                <summary class="p-3 cursor-pointer font-medium text-sm hover:bg-gray-100 select-none">
+		                    Chỉnh sửa nội dung
+		                </summary>
+		                <div id="subtitle-list-${device}" class="p-2 max-h-60 overflow-y-auto text-sm space-y-2 bg-white border-t">
+		                    <div class="text-center text-gray-500 py-4">Vui lòng tải file SRT trước</div>
+		                </div>
+		            </details>
+		        </div>
+		    `;
+		}
+        // --- GLOBAL EVENT LISTENERS ---
+        function addGlobalListeners() {
+            document.body.addEventListener('click', (e) => {
+                const toolbarBtn = e.target.closest('.toolbar-btn');
+                if (toolbarBtn) {
+                    document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+                    toolbarBtn.classList.add('active');
+                    openModal(toolbarBtn.dataset.modalId);
+                }
+                if (e.target.closest('[data-close-modal]')) {
+                    closeAllModals();
+                }
+                const ratioBtn = e.target.closest('.ratio-btn');
+                if (ratioBtn) {
+                    setAspectRatio(ratioBtn.dataset.ratio);
+                }
+                if (e.target.closest('button')?.id.startsWith('start-btn')) startRecording();
+                if (e.target.closest('button')?.id.startsWith('stop-btn') || e.target.closest('button')?.id === 'recording-stop-btn') stopRecording();
+                if (e.target.closest('button')?.id.startsWith('new-video-btn') || e.target.closest('button')?.id === 'recording-new-btn') resetToEditMode();
+                
+                if (e.target.closest('button')?.id.startsWith('convert-btn') || e.target.closest('button')?.id === 'recording-convert-btn') {
+                    convertToMp4();
+                }
+            });
+			
+            document.body.addEventListener('change', (e) => {
+                if (e.target.closest('.effect-checkbox')) {
+                    if (e.target.checked) activeEffects.add(e.target.value);
+                    else activeEffects.delete(e.target.value);
+                    syncCheckboxes(e.target);
+                    drawStaticFrame();
+                }
+                if (e.target.id.startsWith('image-upload')) handleImageUpload(e.target.files);
+                if (e.target.id.startsWith('audio-upload-1')) handleAudioUpload(1, e.target.files[0]);
+                if (e.target.id.startsWith('audio-upload-2')) handleAudioUpload(2, e.target.files[0]);
+                if (e.target.id.startsWith('logo-upload')) handleLogoUpload(e.target.files[0]);
+                if (e.target.id.startsWith('logo-toggle')) {
+                    logoState.enabled = e.target.checked;
+                    syncCheckboxes(e.target);
+                    drawStaticFrame();
+                }
+                if (e.target.name && e.target.name.startsWith('logo-pos')) {
+                    logoState.position = e.target.value;
+                    syncRadios(e.target);
+                    drawStaticFrame();
+                }
+				if (e.target.id.startsWith('subtitle-upload')) {
+				    const file = e.target.files[0];
+				    if (file) {
+				        const reader = new FileReader();
+						reader.onload = (ev) => {
+						    subtitleState.data = parseSRT(ev.target.result);
+						    // Cập nhật tên file cho cả 2 giao diện
+						    document.querySelectorAll('[id^="subtitle-status"]').forEach(el => el.textContent = file.name);
+						    
+						    // === SỬA LẠI: Render danh sách cho CẢ Mobile và Desktop ===
+						    renderSubtitleEditorList('mobile');
+						    renderSubtitleEditorList('desktop'); 
+						    // ==========================================================
+						
+						    drawStaticFrame();
+						};
+				        reader.readAsText(file);
+				    }
+				}
+				if (e.target.id.startsWith('sub-font')) {
+				    subtitleState.fontFamily = e.target.value;
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-bg-toggle')) {
+				    subtitleState.hasBackground = e.target.checked;
+				    drawStaticFrame();
+				}
+				
+				// Thêm vào trong document.body.addEventListener('input', ...)
+				if (e.target.id.startsWith('sub-color')) {
+				    subtitleState.color = e.target.value;
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-stroke-color')) {
+				    subtitleState.strokeColor = e.target.value;
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-stroke-width')) {
+				    subtitleState.strokeWidth = parseInt(e.target.value);
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-shadow-color')) {
+				    subtitleState.shadowColor = e.target.value;
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-shadow-blur')) {
+				    subtitleState.shadowBlur = parseInt(e.target.value);
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-bg-color')) {
+				    subtitleState.backgroundColor = e.target.value;
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-bg-opacity')) {
+				    subtitleState.backgroundOpacity = parseFloat(e.target.value);
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-size')) {
+				    subtitleState.fontSize = parseInt(e.target.value);
+				    document.querySelectorAll('[id^="sub-size-val"]').forEach(el => el.textContent = e.target.value);
+				    drawStaticFrame();
+				}
+				if (e.target.id.startsWith('sub-pos')) {
+				    subtitleState.position = e.target.value;
+				    drawStaticFrame();
+				}
+            });
+
+            document.body.addEventListener('input', (e) => {
+                if (e.target.id.startsWith('logo-size')) {
+                    logoState.size = e.target.value / 100;
+                    syncSliders(e.target);
+                    drawStaticFrame();
+                }
+                if (e.target.id.startsWith('audio-volume-1')) {
+                    audioState.volume1 = parseFloat(e.target.value);
+                    syncSliders(e.target);
+                }
+                if (e.target.id.startsWith('audio-volume-2')) {
+                    audioState.volume2 = parseFloat(e.target.value);
+                    syncSliders(e.target);
+                }
+            });
+        }
+
+        // --- UI SYNC & HANDLERS ---
+        function syncCheckboxes(source) {
+            const value = source.value;
+            const isChecked = source.checked;
+            document.querySelectorAll(`input[type="checkbox"][value="${value}"]`).forEach(box => box.checked = isChecked);
+        }
+        function syncRadios(source) {
+            const value = source.value;
+            const name = source.name.replace(/-desktop/g, '').replace(/-mobile/g, '').replace('-action','');
+            document.querySelectorAll(`input[type="radio"][name^="${name}"][value="${value}"]`).forEach(radio => radio.checked = true);
+        }
+        function syncSliders(source) {
+            const value = source.value;
+            const id = source.id.replace(/-desktop/g, '').replace(/-mobile/g, '').replace('-action','');
+            document.querySelectorAll(`input[type="range"][id^="${id}"]`).forEach(slider => slider.value = value);
+        }
+        function handleImageUpload(files) {
+            if (!files || files.length === 0) return;
+            imageFiles = []; 
+            const filePromises = Array.from(files).map(file => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = URL.createObjectURL(file);
+                    img.onload = () => {
+                        imageFiles.push(img);
+                        resolve(img);
+                    };
+                });
+            });
+
+            Promise.all(filePromises).then(() => {
+                document.querySelectorAll('[id^="image-count"]').forEach(el => el.textContent = `${imageFiles.length} ảnh`);
+                updateThumbnails();
+                drawStaticFrame();
+            });
+        }
+        function updateThumbnails() {
+            const containers = document.querySelectorAll('[id^="thumbnail-container"]');
+            containers.forEach(container => {
+                container.innerHTML = '';
+                imageFiles.forEach(img => {
+                    const thumb = document.createElement('img');
+                    thumb.src = img.src;
+                    thumb.className = 'thumbnail';
+                    container.appendChild(thumb);
+                });
+            });
+        }
+        function handleAudioUpload(id, file) {
+            if (!file) return;
+            if (id === 1) audioFile1 = file;
+            else audioFile2 = file;
+            document.querySelectorAll(`[id^="audio-name-${id}"]`).forEach(el => el.textContent = file.name);
+        }
+        function handleLogoUpload(file) {
+            if (!file) return;
+            logoFile = new Image();
+            logoFile.crossOrigin = "anonymous";
+            logoFile.src = URL.createObjectURL(file);
+            document.querySelectorAll('[id^="logo-name"]').forEach(el => el.textContent = file.name);
+            logoFile.onload = () => {
+                document.querySelectorAll('[id^="logo-controls"]').forEach(el => el.classList.remove('hidden'));
+                document.querySelectorAll('[id^="logo-toggle"]').forEach(el => el.checked = true);
+                logoState.enabled = true;
+                drawStaticFrame();
+            };
+        }
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            closeAllModals();
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('active');
+        }
+        function closeAllModals() {
+            document.querySelectorAll('.modal-backdrop').forEach(modal => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                modal.classList.remove('active');
+            });
+            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+        }
+
+        // --- PERFORMANCE OPTIMIZATION ---
+        function setAspectRatio(ratio) {
+            currentAspectRatio = ratio;
+            const screenWidth = window.innerWidth;
+            const baseWidth = Math.min(1280, screenWidth * (screenWidth < 768 ? 1.5 : 1)); 
+            
+            let width, height;
+            switch (ratio) {
+                case '9:16': width = baseWidth * 9 / 16; height = baseWidth; break;
+                case '1:1': width = height = baseWidth; break;
+                case '4:3': width = baseWidth; height = baseWidth * 3 / 4; break;
+                default: width = baseWidth; height = baseWidth * 9 / 16; break;
+            }
+            canvas.width = Math.round(width);
+            canvas.height = Math.round(height);
+            document.querySelectorAll('.ratio-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.ratio === ratio));
+            drawStaticFrame();
+        }
+
+        // --- DRAWING & EFFECTS ---
+        function drawStaticFrame() { if (animationFrameId) cancelAnimationFrame(animationFrameId); renderAll(0); }
+        function renderAll(elapsedTime) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground(elapsedTime);
+            drawMainImage(elapsedTime);
+            if (activeEffects.has('aura')) renderAura();
+            if (activeEffects.has('lightRays')) renderParticles(particles.lightRays, 'lightRay');
+            if (activeEffects.has('clouds')) renderParticles(particles.clouds, 'cloud');
+            if (activeEffects.has('lotus')) renderParticles(particles.lotus, 'lotus');
+            if (activeEffects.has('sparkles')) renderParticles(particles.sparkles, 'sparkle');
+            drawSubtitles(elapsedTime);
+			if (logoFile && logoState.enabled) drawLogo();
+        }
+        function drawBackground(elapsedTime) {
+            if (activeEffects.has('blur-zoom') && imageFiles.length > 0) {
+                const img = imageFiles[slideshowState.currentIndex] || imageFiles[0];
+                ctx.save(); ctx.filter = 'blur(20px)';
+                const bgAspect = img.width / img.height;
+                let bgW, bgH;
+                if (canvas.width / canvas.height > bgAspect) { bgW = canvas.width * zoomPanState.level; bgH = bgW / bgAspect; } 
+                else { bgH = canvas.height * zoomPanState.level; bgW = bgH * bgAspect; }
+                ctx.drawImage(img, (canvas.width - bgW) / 2, (canvas.height - bgH) / 2, bgW, bgH);
+                ctx.restore();
+            } else { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+        }
+        function drawMainImage(elapsedTime) {
+            if (imageFiles.length === 0) {
+                ctx.fillStyle = '#fff'; ctx.font = '30px Inter'; ctx.textAlign = 'center';
+                ctx.fillText('Xem trước video', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            if (activeEffects.has('slideshow') && imageFiles.length > 1) {
+                const totalCycleTime = slideshowState.imageDuration + slideshowState.transitionDuration;
+                const timeInCycle = elapsedTime % totalCycleTime;
+                
+                const imageIndex = Math.floor(elapsedTime / totalCycleTime) % imageFiles.length;
+                const nextImageIndex = (imageIndex + 1) % imageFiles.length;
+
+                const currentImg = imageFiles[imageIndex];
+                const nextImg = imageFiles[nextImageIndex];
+
+                let transitionProgress = 0;
+                if (timeInCycle > slideshowState.imageDuration) {
+                    transitionProgress = (timeInCycle - slideshowState.imageDuration) / slideshowState.transitionDuration;
+                }
+
+                ctx.globalAlpha = 1 - transitionProgress;
+                drawImageWithPanZoom(currentImg);
+                
+                if (transitionProgress > 0) {
+                    ctx.globalAlpha = transitionProgress;
+                    drawImageWithPanZoom(nextImg);
+                }
+                ctx.globalAlpha = 1;
+
+            } else {
+                drawImageWithPanZoom(imageFiles[0]);
+            }
+        }
+        function drawImageWithPanZoom(img) {
+            const canvasAspect = canvas.width / canvas.height; const imageAspect = img.width / img.height;
+            let sx=0, sy=0, sWidth=img.width, sHeight=img.height;
+            if (activeEffects.has('blur-zoom')) {
+                const zoom = 1 - (zoomPanState.level - 1) * 0.5;
+                sWidth = img.width * zoom; sHeight = img.height * zoom;
+                sx = (img.width - sWidth) * zoomPanState.x; sy = (img.height - sHeight) * zoomPanState.y;
+            }
+            let dWidth, dHeight, dx, dy;
+            if (imageAspect > canvasAspect) { dWidth = canvas.width; dHeight = dWidth / imageAspect; dx = 0; dy = (canvas.height - dHeight) / 2; } 
+            else { dHeight = canvas.height; dWidth = dHeight * imageAspect; dy = 0; dx = (canvas.width - dWidth) / 2; }
+            ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+        }
+        function drawLogo() {
+            const logoW = canvas.width * logoState.size; const logoH = logoW / (logoFile.width / logoFile.height);
+            const margin = canvas.width * 0.02; let x, y;
+            switch(logoState.position) {
+                case 'top-left': x = margin; y = margin; break;
+                case 'top-right': x = canvas.width - logoW - margin; y = margin; break;
+                case 'bottom-left': x = margin; y = canvas.height - logoH - margin; break;
+                default: x = canvas.width - logoW - margin; y = canvas.height - logoH - margin; break;
+            }
+            ctx.drawImage(logoFile, x, y, logoW, logoH);
+        }
+        function initializeEffects() {
+            for (let key in particles) particles[key] = [];
+            const isMobile = window.innerWidth < 768;
+            const sparkleCount = isMobile ? 25 : 50;
+            const lotusCount = isMobile ? 10 : 20;
+            const cloudCount = isMobile ? 5 : 10;
+            const lightRayCount = isMobile ? 4 : 8;
+
+            if (activeEffects.has('sparkles')) for (let i = 0; i < sparkleCount; i++) particles.sparkles.push(createParticle('sparkle'));
+            if (activeEffects.has('clouds')) for (let i = 0; i < cloudCount; i++) particles.clouds.push(createParticle('cloud'));
+            if (activeEffects.has('lotus')) for (let i = 0; i < lotusCount; i++) particles.lotus.push(createParticle('lotus'));
+            if (activeEffects.has('lightRays')) for (let i = 0; i < lightRayCount; i++) particles.lightRays.push(createParticle('lightRay'));
+            zoomPanState = { level: 1.0, dir: 1, x: 0.5, y: 0.5, targetX: Math.random(), targetY: Math.random() };
+        }
+        function createParticle(type) {
+            const p = { x: Math.random() * canvas.width, y: Math.random() * canvas.height };
+            switch(type) {
+                case 'sparkle': p.size = Math.random() * 2.5 + 1.5; p.opacity = Math.random() * 0.7 + 0.3; p.speedY = Math.random() * 0.6 + 0.3; p.speedX = (Math.random() - 0.5) * 0.3; break;
+                case 'cloud': p.size = Math.random() * 80 + 40; p.opacity = Math.random() * 0.3 + 0.15; p.speedX = Math.random() * 0.3 + 0.2; p.y = Math.random() * canvas.height * 0.8; break;
+                case 'lotus': p.y = -20; p.size = Math.random() * 20 + 15; p.opacity = Math.random() * 0.6 + 0.4; p.speedY = Math.random() * 1 + 0.5; p.speedX = (Math.random() - 0.5) * 0.6; p.rotation = Math.random() * Math.PI * 2; p.rotationSpeed = (Math.random() - 0.5) * 0.02; break;
+                case 'lightRay': p.angle = Math.random() * Math.PI * 2; p.speed = (Math.random() - 0.5) * 0.0005; p.opacity = Math.random() * 0.1 + 0.05; break;
+            }
+            return p;
+        }
+        function updateEffects() {
+            if (activeEffects.has('blur-zoom')) {
+                zoomPanState.level += 0.0001 * zoomPanState.dir;
+                if (zoomPanState.level > 1.05 || zoomPanState.level < 1.0) zoomPanState.dir *= -1;
+                zoomPanState.x += (zoomPanState.targetX - zoomPanState.x) * 0.001;
+                zoomPanState.y += (zoomPanState.targetY - zoomPanState.y) * 0.001;
+                if (Math.abs(zoomPanState.targetX - zoomPanState.x) < 0.01) zoomPanState.targetX = Math.random();
+                if (Math.abs(zoomPanState.targetY - zoomPanState.y) < 0.01) zoomPanState.targetY = Math.random();
+            }
+            particles.sparkles.forEach(p => { p.y -= p.speedY; p.x += p.speedX; if (p.y < 0) Object.assign(p, createParticle('sparkle'), {y: canvas.height}); });
+            particles.clouds.forEach(p => { p.x += p.speedX; if (p.x - p.size > canvas.width) Object.assign(p, createParticle('cloud'), {x: -p.size}); });
+            particles.lotus.forEach(p => { p.y += p.speedY; p.x += p.speedX; p.rotation += p.rotationSpeed; if (p.y - p.size > canvas.height) Object.assign(p, createParticle('lotus'), {y: -p.size}); });
+            particles.lightRays.forEach(p => p.angle += p.speed);
+        }
+        function renderParticles(arr, type) {
+            arr.forEach(p => {
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation || 0); ctx.globalAlpha = p.opacity;
+                switch(type) {
+                    case 'sparkle': ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2); ctx.fill(); break;
+                    case 'cloud': ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2); ctx.fill(); break;
+                    case 'lotus':
+                        ctx.fillStyle = '#ffc0cb'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(p.size / 2, -p.size, p.size, 0); ctx.quadraticCurveTo(p.size / 2, p.size / 4, 0, 0); ctx.fill();
+                        ctx.fillStyle = '#f195ad'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-p.size / 2, -p.size, -p.size, 0); ctx.quadraticCurveTo(-p.size / 2, p.size / 4, 0, 0); ctx.fill();
+                        break;
+                    case 'lightRay':
+                        ctx.restore(); ctx.save(); ctx.globalAlpha = p.opacity;
+                        const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height));
+                        gradient.addColorStop(0, 'rgba(255, 255, 220, 0.5)');
+                        gradient.addColorStop(1, 'rgba(255, 255, 220, 0)');
+                        ctx.fillStyle = gradient;
+                        ctx.translate(canvas.width / 2, canvas.height / 2); ctx.rotate(p.angle);
+                        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(canvas.width * 2, -50); ctx.lineTo(canvas.width * 2, 50); ctx.closePath(); ctx.fill();
+                        break;
+                }
+                ctx.restore();
+            });
+        }
+        function renderAura() {
+            const gradient = ctx.createRadialGradient(canvas.width / 2, 0, 0, canvas.width / 2, 0, canvas.height * 1.5);
+            gradient.addColorStop(0, 'rgba(255, 223, 100, 0.4)');
+            gradient.addColorStop(0.5, 'rgba(255, 223, 100, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // --- UI STATE MANAGEMENT ---
+        function setIdleUI() {
+            document.querySelectorAll('button, input, select').forEach(el => el.disabled = false);
+            document.querySelectorAll('[id^="start-btn"]').forEach(btn => btn.classList.remove('hidden'));
+            document.querySelectorAll('[id^="stop-btn"]').forEach(btn => btn.classList.add('hidden'));
+            document.querySelectorAll('[id^="download-section"]').forEach(el => el.classList.add('hidden'));
+            
+            if (window.innerWidth < 768) {
+                document.getElementById('mobile-toolbar').classList.remove('hidden');
+                document.getElementById('mobile-recording-bar').classList.add('hidden');
+            }
+        }
+        function setRecordingUIState() {
+            closeAllModals();
+            document.querySelectorAll('button, input, select').forEach(el => el.disabled = true);
+            
+            document.querySelectorAll('[id^="start-btn"]').forEach(btn => btn.classList.add('hidden'));
+            document.querySelectorAll('[id^="stop-btn"]').forEach(btn => {
+                btn.classList.remove('hidden');
+                btn.disabled = false;
+            });
+            
+            if (window.innerWidth < 768) {
+                document.getElementById('mobile-toolbar').classList.add('hidden');
+                document.getElementById('mobile-recording-bar').classList.remove('hidden');
+                document.getElementById('recording-status').innerHTML = '<div class="loader"></div><span class="ml-2">Đang ghi...</span>';
+                document.getElementById('recording-stop-btn').classList.remove('hidden');
+                document.getElementById('recording-stop-btn').disabled = false;
+                document.getElementById('recording-download-link').classList.add('hidden');
+                document.getElementById('recording-new-btn').classList.add('hidden');
+                document.getElementById('recording-convert-btn')?.classList.add('hidden');
+                document.getElementById('recording-download-mp4-link')?.classList.add('hidden');
+            }
+        }
+        
+        function setFinishedUI(videoURL) {
+            document.querySelectorAll('[id^="new-video-btn"], #recording-new-btn').forEach(btn => btn.disabled = false);
+
+            document.querySelectorAll('[id^="download-section"]').forEach(el => {
+                el.classList.remove('hidden');
+                const link = el.querySelector('[id^="download-link"]');
+                if (link) {
+                    if (link.href) URL.revokeObjectURL(link.href);
+                    link.href = videoURL;
+                    link.download = `video_${Date.now()}.${fileExtension}`;
+                    link.textContent = `Tải Video (.${fileExtension})`;
+                }
+                const convertBtn = el.querySelector('[id^="convert-btn"]');
+                if (convertBtn) {
+                    if (fileExtension === 'webm') {
+                        convertBtn.style.display = 'flex';
+                        resetConvertButtons(); // Reset to initial state
+                    } else {
+                        convertBtn.style.display = 'none';
+                    }
+                }
+                // Ẩn nút tải MP4 khi mới ghi xong
+                const mp4Link = el.querySelector('[id^="download-mp4-link"]');
+                if(mp4Link) mp4Link.style.display = 'none';
+
+                 // Xóa thông báo cũ
+                const statusDiv = el.querySelector('[id^="convert-status"]');
+                if (statusDiv) statusDiv.textContent = '';
+            });
+            document.querySelectorAll('[id^="start-btn"], [id^="stop-btn"]').forEach(btn => btn.classList.add('hidden'));
+
+            if (window.innerWidth < 768) {
+                document.getElementById('recording-status').textContent = 'Hoàn tất!';
+                document.getElementById('recording-stop-btn').classList.add('hidden');
+                document.getElementById('recording-new-btn').classList.remove('hidden');
+
+                const downloadLink = document.getElementById('recording-download-link');
+                const mobileConvertBtn = document.getElementById('recording-convert-btn');
+                const mobileMp4Link = document.getElementById('recording-download-mp4-link');
+
+                if (isIOS) {
+                    downloadLink.classList.add('hidden'); 
+                    if (mobileConvertBtn) mobileConvertBtn.classList.add('hidden');
+                    if (mobileMp4Link) mobileMp4Link.classList.add('hidden');
+                } else {
+                    if (downloadLink.href) URL.revokeObjectURL(downloadLink.href);
+                    downloadLink.href = videoURL;
+                    downloadLink.download = `video_${Date.now()}.${fileExtension}`;
+                    downloadLink.textContent = `Tải về (.${fileExtension})`;
+                    downloadLink.classList.remove('hidden');
+                    
+                    if (mobileConvertBtn) {
+                         if (fileExtension === 'webm') {
+                            mobileConvertBtn.classList.remove('hidden');
+                            resetConvertButtons(); // Reset to initial state
+                        } else {
+                            mobileConvertBtn.classList.add('hidden');
+                        }
+                    }
+                    if(mobileMp4Link) mobileMp4Link.classList.add('hidden');
+                }
+            }
+
+            if (isIOS && fileExtension === 'mp4') {
+                showIOSDownloadGuide(videoURL);
+            }
+        }
+		function parseSRT(data) {
+		    // 1. Chuẩn hóa xuống dòng (Windows/Mac/Linux đều hiểu)
+		    data = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+		
+		    // 2. Chia thành từng khối dựa trên dòng trống (2 dấu xuống dòng liên tiếp)
+		    // Regex /\n\s*\n/ nghĩa là: Tìm 2 dấu xuống dòng, chấp nhận cả việc có khoảng trắng ở giữa
+		    const blocks = data.trim().split(/\n\s*\n/);
+		
+		    const result = blocks.map(block => {
+		        // Tách từng dòng trong 1 khối và xóa khoảng trắng thừa ở đầu/cuối mỗi dòng
+		        const lines = block.split('\n').map(line => line.trim());
+		
+		        // Một khối hợp lệ phải có ít nhất 2 dòng (1 dòng thời gian + 1 dòng text)
+		        // Dòng chứa '-->' là dòng thời gian
+		        const timeLineIndex = lines.findIndex(line => line.includes('-->'));
+		        
+		        if (timeLineIndex === -1) return null; // Không tìm thấy thời gian -> Bỏ qua
+		
+		        // Tách thời gian bắt đầu và kết thúc
+		        const timeLine = lines[timeLineIndex];
+		        const [startStr, endStr] = timeLine.split('-->').map(t => t.trim());
+		
+		        // Nội dung phụ đề là tất cả các dòng nằm SAU dòng thời gian
+		        const textLines = lines.slice(timeLineIndex + 1);
+		        const text = textLines.join(' '); // Nối các dòng lại thành 1 câu
+		
+		        return {
+		            start: timeToMs(startStr),
+		            end: timeToMs(endStr),
+		            text: text
+		        };
+		    }).filter(item => item !== null); // Loại bỏ các khối lỗi (null)
+		
+		    console.log("Đã đọc được:", result.length, "phụ đề");
+		    return result;
+		}
+		
+		function timeToMs(timeString) {
+		    if (!timeString) return 0;
+		    // Thay dấu chấm thành dấu phẩy để xử lý thống nhất
+		    timeString = timeString.replace('.', ',');
+		    
+		    const [h, m, s] = timeString.split(':');
+		    const [sec, ms] = s.split(',');
+		    
+		    return (parseInt(h || 0) * 3600 + parseInt(m || 0) * 60 + parseInt(sec || 0)) * 1000 + parseInt(ms || 0);
+		}
+		// Hàm phụ trợ: Tự động ngắt dòng văn bản
+		function wrapText(ctx, text, maxWidth) {
+		    const words = text.split(' ');
+		    let lines = [];
+		    let currentLine = words[0];
+		
+		    for (let i = 1; i < words.length; i++) {
+		        let word = words[i];
+		        let width = ctx.measureText(currentLine + " " + word).width;
+		        if (width < maxWidth) {
+		            currentLine += " " + word;
+		        } else {
+		            lines.push(currentLine);
+		            currentLine = word;
+		        }
+		    }
+		    lines.push(currentLine);
+		    return lines;
+		}
+		
+		// Hàm chính: Vẽ phụ đề
+		function drawSubtitles(elapsedTime) {
+		    if (!subtitleState.enabled || subtitleState.data.length === 0) return;
+		
+		    const currentSub = subtitleState.data.find(s => elapsedTime >= s.start && elapsedTime <= s.end);
+		    if (currentSub) {
+		        ctx.save();
+		
+		        // 1. Thiết lập Font
+		        const scaleFactor = canvas.width / 1280;
+		        const fontSize = subtitleState.fontSize * scaleFactor;
+		        const lineHeight = fontSize * 1.4;
+		        ctx.font = `bold ${fontSize}px "${subtitleState.fontFamily}"`;
+		        ctx.textAlign = 'center';
+		        ctx.textBaseline = 'middle';
+		
+		        // 2. Xử lý xuống dòng (Word Wrap)
+		        // Cho phép lề 2 bên mỗi bên 10%
+		        const maxWidth = canvas.width * 0.8; 
+		        const lines = wrapText(ctx, currentSub.text, maxWidth);
+		
+		        // 3. Tính toán vị trí Y (Căn cứ vào tổng chiều cao đoạn văn)
+		        const totalBlockHeight = lines.length * lineHeight;
+		        let startY;
+		
+		        if (subtitleState.position === 'top') {
+		            startY = canvas.height * 0.1 + (lineHeight / 2);
+		        } else if (subtitleState.position === 'center') {
+		            startY = (canvas.height / 2) - (totalBlockHeight / 2) + (lineHeight / 2);
+		        } else { // Bottom (Mặc định)
+		            startY = canvas.height * 0.9 - totalBlockHeight + (lineHeight / 2);
+		        }
+		
+		        const centerX = canvas.width / 2;
+		
+		        // 4. Vẽ nền (Background) bao trọn cả khối văn bản
+		        if (subtitleState.hasBackground) {
+		            const padding = 15 * scaleFactor;
+		            // Tìm dòng dài nhất để tính chiều rộng nền
+		            let maxLineWidth = 0;
+		            lines.forEach(line => {
+		                const w = ctx.measureText(line).width;
+		                if (w > maxLineWidth) maxLineWidth = w;
+		            });
+		
+		            const bgWidth = maxLineWidth + (padding * 2);
+		            const bgHeight = totalBlockHeight + (padding / 2); // Thêm chút padding dọc
+		            
+		            // Chuyển màu Hex sang RGBA để có độ trong suốt
+		            const hex = subtitleState.backgroundColor;
+		            const r = parseInt(hex.slice(1, 3), 16);
+		            const g = parseInt(hex.slice(3, 5), 16);
+		            const b = parseInt(hex.slice(5, 7), 16);
+		            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${subtitleState.backgroundOpacity})`;
+		
+		            ctx.beginPath();
+		            const bgX = centerX - bgWidth / 2;
+		            const bgY = startY - (lineHeight / 2) - (padding / 4); // Căn chỉnh lại bgY một chút
+		            
+		            if (ctx.roundRect) {
+		                ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 10);
+		            } else {
+		                ctx.rect(bgX, bgY, bgWidth, bgHeight);
+		            }
+		            ctx.fill();
+		        }
+		
+		        // 5. Cấu hình hiệu ứng chữ (Bóng & Viền)
+		        ctx.shadowColor = subtitleState.shadowBlur > 0 ? subtitleState.shadowColor : 'transparent';
+		        ctx.shadowBlur = subtitleState.shadowBlur * scaleFactor;
+		        ctx.strokeStyle = subtitleState.strokeColor;
+		        ctx.lineWidth = subtitleState.strokeWidth * scaleFactor;
+		        ctx.fillStyle = subtitleState.color;
+		
+		        // 6. Vẽ từng dòng chữ
+		        lines.forEach((line, index) => {
+		            const y = startY + (index * lineHeight);
+		            
+		            // Vẽ viền trước (nếu có)
+		            if (subtitleState.strokeWidth > 0) {
+		                ctx.strokeText(line, centerX, y);
+		            }
+		            // Vẽ chữ sau
+		            ctx.fillText(line, centerX, y);
+		        });
+		
+		        ctx.restore();
+		    }
+		}
+		function renderSubtitleEditorList(device) {
+		    const listContainer = document.getElementById(`subtitle-list-${device}`);
+		    if (!listContainer) return;
+		    
+		    if (subtitleState.data.length === 0) {
+		        listContainer.innerHTML = '<div class="text-center text-gray-500">Chưa có dữ liệu</div>';
+		        return;
+		    }
+		
+		    listContainer.innerHTML = subtitleState.data.map((sub, index) => `
+		        <div class="flex gap-2 items-center border-b pb-2">
+		            <span class="text-xs font-mono text-gray-500 w-12">${formatTime(sub.start)}</span>
+		            <input type="text" value="${sub.text}" 
+		                class="flex-1 border rounded px-2 py-1 text-sm focus:border-rose-800 outline-none"
+		                onchange="updateSubtitleText(${index}, this.value)">
+		        </div>
+		    `).join('');
+		}
+		
+		// Hàm cập nhật text khi người dùng sửa trong input
+		window.updateSubtitleText = (index, newText) => {
+		    if (subtitleState.data[index]) {
+		        subtitleState.data[index].text = newText;
+		        drawStaticFrame(); // Vẽ lại ngay để xem trước
+		    }
+		};
+		
+		function formatTime(ms) {
+		    const date = new Date(ms);
+		    return date.toISOString().substr(14, 5); // Chỉ lấy MM:SS
+		}
+        // --- RECORDING LIFECYCLE ---
+        function renderLoop() { const elapsedTime = Date.now() - recordingStartTime; updateEffects(); renderAll(elapsedTime); animationFrameId = requestAnimationFrame(renderLoop); }
+        
+		function startRecording() {
+            if (imageFiles.length === 0 || !audioFile1) {
+                alert('Vui lòng chọn ít nhất một ảnh và âm thanh chính!');
+                return;
+            }
+            if (mediaRecorder) return;
+            if (!supportedMimeType) {
+                alert('Rất tiếc, trình duyệt của bạn không hỗ trợ ghi video.');
+                return;
+            }
+            
+            setRecordingUIState();
+            let recordedChunks = [];
+            initializeEffects();
+            recordingStartTime = Date.now();
+
+            let localAudioContext, destination, localAudioPlayer1, localAudioPlayer2;
+
+            try {
+                localAudioContext = new AudioContext();
+                destination = localAudioContext.createMediaStreamDestination();
+                
+                localAudioPlayer1 = new Audio();
+                localAudioPlayer1.crossOrigin = "anonymous";
+                localAudioPlayer1.src = URL.createObjectURL(audioFile1);
+                // ** SỬA LỖI: Tắt lặp lại để video tự dừng **
+                // localAudioPlayer1.loop = true; // Đã xóa/vô hiệu hóa dòng này
+
+                const source1 = localAudioContext.createMediaElementSource(localAudioPlayer1);
+                const gainNode1 = localAudioContext.createGain();
+                gainNode1.gain.value = audioState.volume1;
+                source1.connect(gainNode1).connect(destination);
+                gainNode1.connect(localAudioContext.destination);
+
+                if (audioFile2) {
+                    localAudioPlayer2 = new Audio();
+                    localAudioPlayer2.crossOrigin = "anonymous";
+                    localAudioPlayer2.src = URL.createObjectURL(audioFile2);
+                    localAudioPlayer2.loop = true; // Nhạc nền vẫn lặp lại
+                    const source2 = localAudioContext.createMediaElementSource(localAudioPlayer2);
+                    const gainNode2 = localAudioContext.createGain();
+                    gainNode2.gain.value = audioState.volume2;
+                    source2.connect(gainNode2).connect(destination);
+                    gainNode2.connect(localAudioContext.destination);
+                }
+                
+                const videoStream = canvas.captureStream(30);
+                const audioStream = destination.stream;
+                const localCombinedStream = new MediaStream([
+                    ...videoStream.getVideoTracks(), 
+                    ...audioStream.getAudioTracks()
+                ]);
+
+                mediaRecorder = new MediaRecorder(localCombinedStream, { mimeType: supportedMimeType });
+                
+                mediaRecorder.ondataavailable = (e) => e.data.size > 0 && recordedChunks.push(e.data);
+
+                mediaRecorder.onstop = () => {
+                    if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
+                    localAudioPlayer1?.pause();
+                    localAudioPlayer2?.pause();
+                    localCombinedStream?.getTracks().forEach(track => track.stop());
+                    if (localAudioContext && localAudioContext.state !== 'closed') { localAudioContext.close(); }
+                    
+                    const blob = new Blob(recordedChunks, { type: supportedMimeType });
+                    webmBlob = blob; 
+                    const videoURL = URL.createObjectURL(blob);
+                    
+                    setFinishedUI(videoURL);
+                    mediaRecorder = null;
+                };
+
+                // ** SỬA LỖI: Thêm lại sự kiện để tự động dừng ghi hình **
+                localAudioPlayer1.addEventListener('ended', () => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        console.log('Âm thanh chính đã kết thúc, tự động dừng ghi hình.');
+                        stopRecording();
+                    }
+                });
+
+                localAudioContext.resume().then(() => {
+                    localAudioPlayer1.play().catch(e => console.error("Lỗi phát âm thanh 1:", e));
+                    localAudioPlayer2?.play().catch(e => console.error("Lỗi phát âm thanh 2:", e));
+
+                    setTimeout(() => {
+                        if (mediaRecorder && mediaRecorder.state === 'inactive') {
+                           mediaRecorder.start();
+                           renderLoop();
+                        }
+                    }, 150);
+
+                }).catch(e => {
+                    console.error("Không thể khởi động AudioContext:", e);
+                    alert("Đã xảy ra lỗi khi khởi động âm thanh. Vui lòng thử lại.");
+                    resetToEditMode();
+                });
+
+            } catch (error) {
+                console.error("Lỗi nghiêm trọng trong quá trình ghi:", error);
+                alert("Đã xảy ra lỗi không mong muốn. Vui lòng làm mới trang và thử lại.");
+                resetToEditMode();
+            }
+        }
+
+        function stopRecording() { 
+            if (mediaRecorder && mediaRecorder.state === 'recording') { 
+                document.querySelectorAll('[id^="stop-btn"], #recording-stop-btn').forEach(btn => btn.disabled = true);
+                mediaRecorder.stop(); 
+            } 
+        }
+        
+		function resetToEditMode() {
+            setIdleUI();
+			drawStaticFrame();
+            webmBlob = null;
+            
+            // ** NÂNG CẤP: Reset toàn diện trạng thái chuyển đổi khi tạo video mới **
+            // 1. Ẩn tất cả các nút tải MP4 cũ
+            document.querySelectorAll('[id^="download-mp4-link"], #recording-download-mp4-link').forEach(link => {
+                link.classList.add('hidden');
+                link.style.display = 'none';
+                link.removeAttribute('href'); // Xóa link cũ để tránh click nhầm
+            });
+
+            // 2. Hiển thị lại các nút "Chuyển sang MP4"
+            document.querySelectorAll('[id^="convert-btn"], #recording-convert-btn').forEach(btn => {
+                btn.style.display = 'flex'; // Hoặc 'inline-flex' tùy vào layout
+                btn.classList.remove('hidden');
+            });
+            
+            // 3. Reset trạng thái của các nút chuyển đổi (văn bản, loader)
+            resetConvertButtons();
+
+            // 4. Xóa các thông báo trạng thái cũ
+            document.querySelectorAll('[id^="convert-status"]').forEach(div => {
+                div.textContent = '';
+            });
+		}
+
+		function showIOSDownloadGuide(url) {
+			const oldModal = document.getElementById('ios-guide-modal');
+			if (oldModal) oldModal.remove();
+
+			const guideHTML = `
+				<div id="ios-guide-modal" class="ios-guide-modal">
+					<div class="ios-guide-content">
+						<h3>Lưu Video trên iPhone/iPad</h3>
+						<p>Video sẽ mở trong tab mới. Để lưu về máy, hãy làm theo các bước sau:</p>
+						<ol>
+							<li>Nhấn vào nút <b>"Chia sẻ"</b> <img src="https://i.imgur.com/7RkF2nq.png" class="share-icon"> ở thanh công cụ.</li>
+							<li>Chọn <b>"Lưu vào Tệp"</b> (Save to Files).</li>
+							<li>Chọn thư mục và nhấn <b>Lưu</b>.</li>
+						</ol>
+						<a href="${url}" target="_blank" id="open-video-link" class="action-button">Mở Video để Bắt đầu</a>
+					</div>
+				</div>
+			`;
+			document.body.insertAdjacentHTML('beforeend', guideHTML);
+
+			const modal = document.getElementById('ios-guide-modal');
+			setTimeout(() => modal.classList.add('visible'), 10);
+
+			document.getElementById('open-video-link').addEventListener('click', () => {
+				modal.classList.remove('visible');
+				setTimeout(() => modal.remove(), 300);
+			});
+		}
+
+		async function convertToMp4() {
+			if (!webmBlob) {
+				alert('Không tìm thấy video để chuyển đổi. Vui lòng tạo video trước.');
+				return;
+			}
+
+			const convertButtons = document.querySelectorAll('[id^="convert-btn"], #recording-convert-btn');
+			const statusDivs = document.querySelectorAll('[id^="convert-status"]');
+
+			// UI: Đang xử lý
+			convertButtons.forEach(btn => {
+				btn.disabled = true;
+				btn.querySelector('.btn-text').classList.add('hidden');
+				btn.querySelector('.btn-loader').classList.remove('hidden');
+			});
+			statusDivs.forEach(div => {
+				div.textContent = 'Đang tải lên server & xử lý...';
+				div.classList.remove('text-red-500');
+				div.classList.add('text-gray-600');
+			});
+
+			try {
+				// Chuẩn bị form data
+				const formData = new FormData();
+				formData.append('video', webmBlob);
+
+				// Gửi về Local Server (/api/convert)
+				const response = await fetch('/api/convert', {
+					method: 'POST',
+					body: formData
+				});
+
+				if (!response.ok) {
+					throw new Error(`Server lỗi: ${response.statusText}`);
+				}
+
+				const data = await response.json();
+
+				if (data.success && data.url) {
+					// Server trả về đường dẫn tương đối (VD: /videos/xyz.mp4)
+					const mp4Url = window.location.origin + data.url;
+
+					// Hiển thị nút tải MP4
+					document.querySelectorAll('[id^="download-mp4-link"], #recording-download-mp4-link').forEach(link => {
+						link.href = mp4Url;
+						link.classList.remove('hidden');
+						link.style.display = 'inline-flex';
+						
+						// Cấu hình download
+						link.setAttribute('download', 'video-final.mp4'); 
+					});
+
+					statusDivs.forEach(div => div.textContent = 'Chuyển đổi thành công!');
+					
+					// Ẩn nút chuyển đổi đi để người dùng tập trung vào nút tải về
+					convertButtons.forEach(btn => btn.style.display = 'none');
+					
+					// Nếu là iOS, kích hoạt hướng dẫn khi bấm tải
+					if (isIOS) {
+						 document.querySelectorAll('[id^="download-mp4-link"], #recording-download-mp4-link').forEach(link => {
+							// Xóa sự kiện cũ (nếu có) bằng cách clone node (mẹo nhanh) hoặc gán onclick
+							link.onclick = (e) => {
+								e.preventDefault(); // Ngăn tải mặc định
+								showIOSDownloadGuide(mp4Url); // Hiện modal hướng dẫn
+							};
+						 });
+					}
+
+				} else {
+					throw new Error('Phản hồi không hợp lệ từ server.');
+				}
+
+			} catch (error) {
+				console.error('Lỗi chuyển đổi:', error);
+				statusDivs.forEach(div => {
+					div.textContent = 'Lỗi: ' + error.message;
+					div.classList.add('text-red-500');
+				});
+				resetConvertButtons();
+			}
+		}
+
+        function resetConvertButtons() {
+            const convertButtons = document.querySelectorAll('[id^="convert-btn"], #recording-convert-btn');
+            convertButtons.forEach(btn => {
+                btn.disabled = false;
+                const textSpan = btn.querySelector('.btn-text');
+                const loader = btn.querySelector('.btn-loader');
+                if(textSpan) {
+                    textSpan.textContent = btn.id === 'recording-convert-btn' ? 'Chuyển MP4' : 'Chuyển sang MP4';
+                    textSpan.classList.remove('hidden');
+                }
+                if(loader) loader.classList.add('hidden');
+            });
+        }
+    </script>
+	<script>
+			// === PWA Installation Logic ===
+			window.addEventListener('load', () => {
+				const installPromptEl = document.getElementById('install-prompt');
+				const installButton = document.getElementById('install-button');
+				const closeInstallPromptButton = document.getElementById('close-install-prompt');
+				let deferredPrompt;
+
+				if ('serviceWorker' in navigator) {
+					navigator.serviceWorker.register('sw.js')
+					.then((reg) => console.log('Service worker registered.', reg))
+					.catch((err) => console.error('Service worker registration failed:', err));
+				}
+
+				window.addEventListener('beforeinstallprompt', (e) => {
+					e.preventDefault();
+					deferredPrompt = e;
+					if (installPromptEl) {
+						installPromptEl.style.display = 'flex';
+					}
+				});
+
+				if (installButton) {
+					installButton.addEventListener('click', async () => {
+						if (deferredPrompt) {
+							if (installPromptEl) installPromptEl.style.display = 'none';
+							deferredPrompt.prompt();
+							await deferredPrompt.userChoice;
+							deferredPrompt = null;
+						}
+					});
+				}
+
+				if (closeInstallPromptButton) {
+					closeInstallPromptButton.addEventListener('click', () => {
+						 if (installPromptEl) {
+							installPromptEl.style.display = 'none';
+						 }
+					});
+				}
+				
+				setTimeout(() => {
+					const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+					if (!isStandalone && deferredPrompt) {
+						if (installPromptEl) installPromptEl.style.display = 'flex';
+					}
+				}, 3000);
+			});
+	</script>
+</body>
+</html>
