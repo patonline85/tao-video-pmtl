@@ -6,7 +6,7 @@
     <title>Pháp Môn Tâm Linh 心靈法門</title>
 	<link rel="icon" href="logo.png" type="image/png">
 	<!-- Google tag (gtag.js) -->
-	<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+	<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
 	<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-DQWQTWXMZL"></script>
 	<script>
 	  window.dataLayer = window.dataLayer || [];
@@ -1384,14 +1384,14 @@
 		let ffmpegInstance = null;
 		
 		async function loadFFmpeg() {
-			if (!ffmpegInstance) {
-				ffmpegInstance = createFFmpeg({ 
-					log: true,
-					// SỬA LẠI LINK NÀY CHO KHỚP VỚI THẺ SCRIPT TRÊN HEAD
-					corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
-				});
-				await ffmpegInstance.load();
-			}
+		    if (!ffmpegInstance) {
+		        ffmpegInstance = createFFmpeg({ 
+		            log: true,
+		            // QUAN TRỌNG: Trỏ về file nội bộ trong thư mục public
+		            corePath: 'ffmpeg-core.js' 
+		        });
+		        await ffmpegInstance.load();
+		    }
 		}
 		
 		async function convertToMp4() {
