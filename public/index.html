@@ -772,56 +772,54 @@
             }
         }
 		function drawImageWithPanZoom(img) {
-            // 1. Tính toán tỷ lệ khung hình và tỷ lệ ảnh
-            const canvasRatio = canvas.width / canvas.height;
-            const imgRatio = img.width / img.height;
-            
-            // 2. Tính toán kích thước vẽ (Destination)
-            let dWidth, dHeight;
-            let dx, dy;
-
-            // Logic: Object-fit: CONTAIN (Giữ nguyên tỷ lệ, hiển thị toàn bộ ảnh)
-            if (imgRatio > canvasRatio) {
-                // Ảnh ngang dài hơn khung -> Lấy chiều rộng khung làm chuẩn
-                dWidth = canvas.width;
-                dHeight = canvas.width / imgRatio;
-                dx = 0;
-                dy = (canvas.height - dHeight) / 2; // Căn giữa dọc
-            } else {
-                // Ảnh dọc cao hơn khung -> Lấy chiều cao khung làm chuẩn
-                dHeight = canvas.height;
-                dWidth = canvas.height * imgRatio;
-                dy = 0;
-                dx = (canvas.width - dWidth) / 2; // Căn giữa ngang
-            }
-
-            // 3. Xử lý hiệu ứng Zoom (Nếu có)
-            // Lưu ý: Zoom vào nhưng vẫn giữ đúng tỷ lệ, không được làm méo
+            // --- 1. XỬ LÝ NGUỒN (SOURCE) ---
+            // Mặc định lấy toàn bộ ảnh gốc
             let sWidth = img.width;
             let sHeight = img.height;
             let sx = 0;
             let sy = 0;
 
+            // Xử lý hiệu ứng Zoom (Ken Burns) - Cắt cúp ngay trên ảnh gốc
             if (activeEffects.has('blur-zoom')) {
-                // Hiệu ứng Ken Burns: Zoom nhẹ vào bên trong ảnh gốc
-                // Thay vì co giãn destination, ta cắt (crop) source
-                const zoomLevel = 1 / zoomPanState.level; // Đảo ngược vì zoomPanState.level > 1
+                // Zoom vào thì vùng lấy ảnh (Source) sẽ nhỏ lại
+                // zoomPanState.level chạy từ 1.0 -> 1.x
+                // Vùng cắt thực tế = Kích thước ảnh / độ zoom
+                const cropWidth = img.width / zoomPanState.level;
+                const cropHeight = img.height / zoomPanState.level;
                 
-                const cropWidth = img.width * zoomLevel;
-                const cropHeight = img.height * zoomLevel;
-                
-                sWidth = cropWidth;
-                sHeight = cropHeight;
-                
-                // Tính toán vị trí Pan (Di chuyển)
+                // Tính toán tọa độ cắt để tạo hiệu ứng di chuyển (Pan)
                 sx = (img.width - cropWidth) * zoomPanState.x;
                 sy = (img.height - cropHeight) * zoomPanState.y;
+                
+                // Cập nhật lại kích thước vùng nguồn
+                sWidth = cropWidth;
+                sHeight = cropHeight;
             }
 
-            // 4. Vẽ ảnh
-            // Giải thích tham số:
-            // (img, sx, sy, sWidth, sHeight) -> Lấy phần nào của ảnh gốc
-            // (dx, dy, dWidth, dHeight)     -> Vẽ vào đâu trên canvas
+            // --- 2. TÍNH TOÁN VẼ (DESTINATION) - QUAN TRỌNG NHẤT ---
+            
+            // Tính tỷ lệ giữa Khung hình (Canvas) và Vùng ảnh (Source)
+            const scaleX = canvas.width / sWidth;
+            const scaleY = canvas.height / sHeight;
+
+            // QUY TẮC VÀNG CHỐNG MÉO:
+            // Chỉ dùng 1 tỷ lệ scale duy nhất cho cả 2 chiều.
+            // - Dùng Math.max: Để ảnh LẤP ĐẦY khung (Cover) - Cắt bớt phần thừa.
+            // - Dùng Math.min: Để ảnh HIỆN TOÀN BỘ (Contain) - Có viền đen.
+            
+            // Ở đây mình dùng Math.max để video đẹp (full màn hình 9:16)
+            const scale = Math.max(scaleX, scaleY);
+
+            // Kích thước vẽ thực tế (Sẽ luôn lớn hơn hoặc bằng Canvas)
+            const dWidth = sWidth * scale;
+            const dHeight = sHeight * scale;
+
+            // --- 3. CĂN GIỮA ---
+            // Tọa độ vẽ để ảnh luôn nằm chính giữa khung hình
+            const dx = (canvas.width - dWidth) / 2;
+            const dy = (canvas.height - dHeight) / 2;
+
+            // --- 4. VẼ ---
             ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
         }
         function drawLogo() {
