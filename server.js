@@ -58,37 +58,14 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         .audioCodec('aac')
         .audioBitrate('128k') // Tăng chất lượng âm thanh lên 192k
         .outputOptions([
-            // 1. Giữ nguyên hoặc giảm FPS (nếu không cần quá mượt thì 24 hoặc 30 là đủ nhẹ)
-            '-r 30',
-        
-            // 2. Độ phân giải: Nếu muốn nhanh nhất thì nên bỏ dòng này để giữ nguyên gốc.
-            // Tuy nhiên, nếu bắt buộc phải resize về 720p thì giữ lại.
-            '-vf scale=-2:720',
-        
-            // 3. QUAN TRỌNG NHẤT: Preset
-            // Chuyển từ 'slow' sang 'ultrafast' (Siêu nhanh).
-            // FFmpeg sẽ bỏ qua các thuật toán nén phức tạp để xuất file ngay lập tức.
-            // Nhược điểm: File sẽ nặng hơn khoảng 2-3 lần so với 'slow'.
-            '-preset ultrafast',
-        
-            // 4. Tối ưu độ trễ (Giúp bắt đầu render nhanh hơn)
-            '-tune zerolatency',
-        
-            // 5. CRF (Chất lượng): Tăng lên để giảm gánh nặng cho CPU
-            // Tăng từ 18 lên 28.
-            // 28 là mức chất lượng trung bình khá, không quá nét nhưng render rất nhẹ.
-            '-crf 28',
-        
-            // 6. Profile: Chuyển về 'baseline'
-            // Profile này đơn giản nhất, ít tốn tài nguyên giải mã/mã hóa nhất.
-            '-profile:v baseline',
-            
-            // 7. Các thông số tương thích web (Giữ nguyên)
+            '-r 30',                 // FPS 30 (Đủ dùng, nhẹ hơn 60)
+            '-preset ultrafast',     // Preset nhanh nhất của FFmpeg
+            '-tune zerolatency',     // Giảm độ trễ khi bắt đầu
+            '-crf 28',               // Giảm chất lượng xuống mức trung bình để nhẹ CPU
+            '-profile:v baseline',   // Profile cơ bản nhất, tương thích mọi máy
             '-movflags +faststart',
             '-pix_fmt yuv420p',
-            
-            // 8. Ép sử dụng đa luồng tối đa (Tận dụng hết các nhân CPU của Armbian)
-            '-threads 0' 
+            '-threads 0'             // Tận dụng hết số nhân CPU của TV Box
         ])
         .on('end', () => {
             console.log(`[SUCCESS] Hoàn tất job: ${outputFilename}`);
