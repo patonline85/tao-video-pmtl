@@ -58,32 +58,32 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         .audioCodec('aac')
         .audioBitrate('192k') // Tăng chất lượng âm thanh lên 192k
         .outputOptions([
-            // 1. Cố định 30 FPS
-            '-r 30',
+            // 1. Tăng FPS lên 60 để chuyển động mượt mà hơn (nếu nguồn cho phép)
+            '-r 60',
 
-            // 2. Resize chuẩn HD 720p
-            '-vf scale=-2:720',
+            // 2. Nâng lên Full HD 1080p (Thay vì 720p)
+            // Nếu ảnh đầu vào nét, video sẽ cực nét.
+            '-vf scale=-2:1080',
 
-            // 3. Preset: Chuyển từ 'veryfast' sang 'fast'
-            // 'fast' nén kỹ hơn, hình ảnh đẹp hơn, file nhẹ hơn, nhưng convert lâu hơn khoảng 20%
-            '-preset fast',
+            // 3. Preset: Chuyển sang 'slow'
+            // 'slow' giúp FFmpeg nén kỹ hơn, giữ chi tiết tốt hơn 'fast' ở cùng dung lượng.
+            '-preset slow',
 
-            // 4. CHÌA KHÓA CHẤT LƯỢNG:
-            // -crf 23: Mức tiêu chuẩn cân bằng (trước đó là 28 nên bị mờ)
-            // Càng giảm số này càng nét (VD: 18 là cực nét), nhưng file sẽ nặng. 23 là chuẩn.
-            '-crf 23',
+            // 4. CHÌA KHÓA QUAN TRỌNG NHẤT: CRF
+            // Giảm từ 23 xuống 18.
+            // 18 là mức "Visually Lossless" (Mắt thường thấy như file gốc).
+            // Số càng nhỏ càng nét (và dung lượng càng cao).
+            '-crf 18',
 
-            // 5. Ép Bitrate (Chuẩn YouTube 720p)
-            // Đảm bảo video luôn có đủ dung lượng dữ liệu để hiển thị chi tiết
-            '-b:v 2500k',     // Bitrate trung bình 2.5 Mbps
-            '-maxrate 4000k', // Cho phép vọt lên 4 Mbps ở cảnh chuyển động nhanh
-            '-bufsize 8000k', // Bộ đệm xử lý
-
-            // 6. Tương thích thiết bị
+            // 5. BỎ CÁC DÒNG ÉP BITRATE (-b:v, -maxrate, -bufsize)
+            // Lý do: Khi dùng CRF, hãy để FFmpeg tự quyết định bitrate cần thiết cho từng cảnh.
+            // Cảnh tĩnh nó sẽ dùng ít bit, cảnh nhiều hạt/hiệu ứng nó sẽ tự tăng bitrate lên cao để không bị vỡ.
+            
+            // 6. Tương thích và màu sắc
             '-movflags +faststart',
             '-pix_fmt yuv420p',
-            '-profile:v high', // Dùng profile High để giữ chi tiết tốt hơn Main
-            '-level 4.0'
+            '-profile:v high',
+            '-level 4.2' // Nâng level lên 4.2 để hỗ trợ 1080p 60fps tốt nhất
         ])
         .on('end', () => {
             console.log(`[SUCCESS] Hoàn tất job: ${outputFilename}`);
