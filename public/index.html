@@ -328,26 +328,27 @@
                 </div>
             `;
         }
-        function generateStartStopHTML(device, isCompact = false) {
-            const buttonPadding = isCompact ? 'py-2 px-3 text-sm' : 'py-3 px-4';
-            return `
-                <div class="flex gap-2">
-                    <button id="start-btn-${device}" class="w-full theme-bg-primary text-white font-bold ${buttonPadding} rounded-lg hover:bg-rose-800 transition disabled:bg-rose-300">Bắt đầu</button>
-                    <button id="stop-btn-${device}" class="w-full bg-gray-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-gray-700 transition disabled:bg-gray-300 hidden" disabled>Dừng</button>
-                    <div id="download-section-${device}" class="w-full hidden">
-                         <a id="download-link-${device}" class="w-full text-center inline-block bg-green-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-green-700">Tải Video (.${fileExtension})</a>
-                         <button id="convert-btn-${device}" class="w-full mt-2 bg-blue-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                            <span class="btn-text">Chuyển sang MP4</span>
-                            <div class="loader btn-loader hidden" style="width: 16px; height: 16px; border-width: 2px;"></div>
-                         </button>
-                         <!-- ** NÂNG CẤP: Thêm nút tải MP4 ** -->
-                         <a id="download-mp4-link-${device}" target="_blank" class="w-full mt-2 text-center hidden items-center justify-center bg-purple-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-purple-700">Tải về MP4</a>
-                         <div id="convert-status-${device}" class="text-xs text-center text-gray-600 mt-2"></div>
-                         <button id="new-video-btn-${device}" class="w-full mt-2 bg-gray-200 text-gray-800 font-bold ${buttonPadding} rounded-lg hover:bg-gray-300 transition">Tạo mới</button>
-                    </div>
-                </div>
-            `;
-        }
+		function generateStartStopHTML(device, isCompact = false) {
+		    const buttonPadding = isCompact ? 'py-2 px-3 text-sm' : 'py-3 px-4';
+		    return `
+		        <div id="timer-${device}" class="text-center text-2xl font-mono font-bold text-red-600 mb-2 hidden">00:00</div>
+		        
+		        <div class="flex gap-2">
+		            <button id="start-btn-${device}" class="w-full theme-bg-primary text-white font-bold ${buttonPadding} rounded-lg hover:bg-rose-800 transition disabled:bg-rose-300">Bắt đầu</button>
+		            <button id="stop-btn-${device}" class="w-full bg-gray-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-gray-700 transition disabled:bg-gray-300 hidden" disabled>Dừng</button>
+		            <div id="download-section-${device}" class="w-full hidden">
+		                    <a id="download-link-${device}" class="w-full text-center inline-block bg-green-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-green-700">Tải Video (.${fileExtension})</a>
+		                    <button id="convert-btn-${device}" class="w-full mt-2 bg-blue-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+		                    <span class="btn-text">Chuyển sang MP4</span>
+		                    <div class="loader btn-loader hidden" style="width: 16px; height: 16px; border-width: 2px;"></div>
+		                    </button>
+		                    <a id="download-mp4-link-${device}" target="_blank" class="w-full mt-2 text-center hidden items-center justify-center bg-purple-600 text-white font-bold ${buttonPadding} rounded-lg hover:bg-purple-700">Tải về MP4</a>
+		                    <div id="convert-status-${device}" class="text-xs text-center text-gray-600 mt-2"></div>
+		                    <button id="new-video-btn-${device}" class="w-full mt-2 bg-gray-200 text-gray-800 font-bold ${buttonPadding} rounded-lg hover:bg-gray-300 transition">Tạo mới</button>
+		            </div>
+		        </div>
+		    `;
+		}
         function generateActionAreaHTML(device) {
              return `
                 <div class="grid grid-cols-3 gap-2">
@@ -1218,6 +1219,8 @@
             initializeEffects();
             recordingStartTime = Date.now();
 
+			startTimerUI();
+
             let localAudioContext, destination, localAudioPlayer1, localAudioPlayer2;
 
             try {
@@ -1310,8 +1313,47 @@
                 resetToEditMode();
             }
         }
-
+		// --- LOGIC ĐỒNG HỒ ĐẾM NGƯỢC (Thêm mới) ---
+		let timerInterval = null;
+		
+		function formatDuration(ms) {
+		    const totalSeconds = Math.floor(ms / 1000);
+		    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+		    const s = (totalSeconds % 60).toString().padStart(2, '0');
+		    return `${m}:${s}`;
+		}
+		
+		function startTimerUI() {
+		    // Hiện đồng hồ trên Desktop/Modal
+		    document.querySelectorAll('[id^="timer-"]').forEach(el => {
+		        el.classList.remove('hidden');
+		        el.textContent = "00:00";
+		    });
+		
+		    // Cập nhật mỗi giây
+		    timerInterval = setInterval(() => {
+		        const elapsed = Date.now() - recordingStartTime; // Biến này bạn đã có sẵn trong code cũ
+		        const timeString = formatDuration(elapsed);
+		
+		        // 1. Cập nhật số giờ trên giao diện chính
+		        document.querySelectorAll('[id^="timer-"]').forEach(el => el.textContent = timeString);
+		
+		        // 2. Cập nhật thanh trạng thái dưới cùng (Mobile)
+		        const mobileStatus = document.getElementById('recording-status');
+		        if (mobileStatus && window.innerWidth < 768) {
+		             mobileStatus.innerHTML = `<div class="loader" style="width:20px;height:20px;border-width:2px"></div><span class="ml-2 font-mono font-bold text-red-600">${timeString}</span>`;
+		        }
+		    }, 1000);
+		}
+		
+		function stopTimerUI() {
+		    if (timerInterval) {
+		        clearInterval(timerInterval);
+		        timerInterval = null;
+		    }
+		}
         function stopRecording() { 
+			stopTimerUI();
             if (mediaRecorder && mediaRecorder.state === 'recording') { 
                 document.querySelectorAll('[id^="stop-btn"], #recording-stop-btn').forEach(btn => btn.disabled = true);
                 mediaRecorder.stop(); 
@@ -1319,6 +1361,8 @@
         }
         
 		function resetToEditMode() {
+			stopTimerUI();
+			document.querySelectorAll('[id^="timer-"]').forEach(el => el.classList.add('hidden'));
             setIdleUI();
 			drawStaticFrame();
             webmBlob = null;
