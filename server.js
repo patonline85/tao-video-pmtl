@@ -95,6 +95,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`Server Armbian đang chạy tại cổng ${port}`);
 });
+
+// Tăng thời gian chờ lên 10 phút (600,000 mili giây)
+// Để server không tự ngắt kết nối khi đang convert video nặng
+server.setTimeout(10 * 60 * 1000);
