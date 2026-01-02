@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: v-creator-app
+    # Dấu chấm (.) nghĩa là build từ code trong repo hiện tại
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # QUAN TRỌNG: Map thư mục video ra đường dẫn tuyệt đối trên Server Armbian
+      # Để bạn dễ dàng tìm và copy file video nếu cần.
+      # Hãy thay '/root/v-creator-data/videos' bằng đường dẫn thực tế trên Armbian của bạn
+      - /root/v-creator-data/videos:/usr/src/app/public/videos
+      
+      # (Tùy chọn) Map thư mục uploads tạm
+      - /root/v-creator-data/uploads:/usr/src/app/uploads
+    
+    environment:
+      - PORT=3000
+    
+    # Giới hạn tài nguyên để server Armbian chạy ổn định
+    deploy:
+      resources:
+        limits:
+          cpus: '0.80' 
+          memory: 1G
