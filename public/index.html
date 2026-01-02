@@ -1385,14 +1385,17 @@
 		
 		async function loadFFmpeg() {
 		    if (!ffmpegInstance) {
-		        // Tạo đường dẫn tuyệt đối để đảm bảo trình duyệt luôn tìm thấy file
-		        const coreUrl = window.location.origin + '/ffmpeg-core.js';
-		        console.log('Đang tải Core từ:', coreUrl); // Log ra để kiểm tra
+		        // Lấy đường dẫn gốc của website
+		        const baseUrl = window.location.origin;
+		        
+		        console.log('Đang tải FFmpeg từ:', baseUrl);
 		
 		        ffmpegInstance = createFFmpeg({ 
 		            log: true,
-		            // SỬA LẠI: Dùng đường dẫn đầy đủ thay vì chỉ tên file
-		            corePath: coreUrl
+		            // Khai báo đường dẫn TUYỆT ĐỐI cho cả 3 file
+		            corePath: baseUrl + '/ffmpeg-core.js',
+		            workerPath: baseUrl + '/ffmpeg-core.worker.js', // <-- Quan trọng: file bạn thiếu
+		            wasmPath: baseUrl + '/ffmpeg-core.wasm'          // <-- Chỉ rõ file wasm luôn cho chắc
 		        });
 		        await ffmpegInstance.load();
 		    }
