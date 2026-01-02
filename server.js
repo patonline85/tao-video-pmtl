@@ -56,14 +56,14 @@ app.post('/api/convert', upload.single('video'), (req, res) => {
         .output(outputPath)
         .videoCodec('libx264')
         .audioCodec('aac')
-        .audioBitrate('192k') // Tăng chất lượng âm thanh lên 192k
+        .audioBitrate('128k') // Tăng chất lượng âm thanh lên 192k
         .outputOptions([
             // 1. Tăng FPS lên 60 để chuyển động mượt mà hơn (nếu nguồn cho phép)
-            '-r 60',
+            '-r 30',
 
             // 2. Nâng lên Full HD 1080p (Thay vì 720p)
             // Nếu ảnh đầu vào nét, video sẽ cực nét.
-            '-vf scale=-2:1080',
+            '-vf scale=-2:720',
 
             // 3. Preset: Chuyển sang 'slow'
             // 'slow' giúp FFmpeg nén kỹ hơn, giữ chi tiết tốt hơn 'fast' ở cùng dung lượng.
